@@ -1,5 +1,3 @@
-use std::env;
-
 use args::tokens::*;
 
 enum Count {
@@ -69,7 +67,6 @@ impl Arg {
         match self.kindOf {
             Type::OnIndex{..} => return self.match_positionalArg(tokenStreamIndex, tokenStream),
             Type::AsOption{..} => return self.match_optionArg(tokenStreamIndex, tokenStream),
-            _ => tokenStreamIndex.clone(),
         }
     }
 
