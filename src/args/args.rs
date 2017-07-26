@@ -1,0 +1,135 @@
+use std::env;
+
+use args::tokens::*;
+
+enum Count {
+    Fixed(u32),
+    Minimum(u32),
+    Maximum(u32),
+    Range { min: u32, max: u32 }
+}
+
+struct InputValueDef {
+    count: Count
+}
+
+enum Type {
+    OnIndex { index: u32 },
+    AsOption { shortName: &'static str, longName: &'static str }
+}
+
+struct Meta {
+    name: &'static str,
+    help: &'static str
+}
+
+pub struct Arg {
+    meta: Meta,
+    kindOf: Type,
+    requiredValue: InputValueDef,
+    pub matchedValues: Option<Vec<String>>
+}
+
+impl Arg {
+    pub fn new() -> Arg {
+        Arg {
+            meta: Meta { name: "", help: "" },
+            kindOf: Type::OnIndex{ index: 0 },
+            requiredValue: InputValueDef { count: Count::Fixed(0) },
+            matchedValues: None
+        }
+    }
+
+    pub fn with_name(mut self, name: &'static str) -> Arg {
+        self.meta.name = name;
+        self
+    }
+
+    pub fn with_help(mut self, help: &'static str) -> Arg {
+        self.meta.help = help;
+        self
+    }
+
+    pub fn on_index(mut self, index: u32) -> Arg {
+        self.kindOf = Type::OnIndex { index: index };
+        self
+    }
+
+    pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> Arg {
+        self.kindOf = Type::AsOption { shortName: short_name, longName: long_name };
+        self
+    }
+
+    pub fn takes_one_value(mut self) -> Arg {
+        self.requiredValue = InputValueDef { count: Count::Fixed(1) };
+        self
+    }
+
+    pub fn takeTokensAtIndex(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        match self.kindOf {
+            Type::OnIndex{..} => return self.match_positionalArg(tokenStreamIndex, tokenStream),
+            Type::AsOption{..} => return self.match_optionArg(tokenStreamIndex, tokenStream),
+            _ => tokenStreamIndex.clone(),
+        }
+    }
+
+    fn match_positionalArg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        if let Type::OnIndex{ index: configuredPosition } = self.kindOf {
+            if *tokenStreamIndex == configuredPosition {
+                self.extract_values(tokenStreamIndex, tokenStream);
+            }
+        }
+        tokenStreamIndex.clone()
+    }
+
+    fn match_optionArg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        if let Type::AsOption{ shortName: definedShortName, longName: definedLongName} = self.kindOf {
+            match tokenStream[0] {
+                Token::ShortName(ref name) if name == definedShortName => return self.extract_values(tokenStreamIndex, tokenStream),
+                Token::LongName(ref name) if name == definedLongName => return self.extract_values(tokenStreamIndex, tokenStream),
+                _ => (),
+            }
+        }
+        tokenStreamIndex.clone()
+    }
+
+    fn extract_values(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        use self::Count::*;
+
+        let mut newTokenStreamIndex = tokenStreamIndex.clone();
+
+        let availableValues = countAvailableContigousValues(tokenStream);
+        match self.requiredValue.count {
+            Fixed(fixedCount) if availableValues >= fixedCount => {
+                for copiedValue in copyContigousValues(tokenStream, &fixedCount) {
+                    println!("copied value= {}", copiedValue);
+                }
+                self.matchedValues = Some(copyContigousValues(tokenStream, &fixedCount));
+                newTokenStreamIndex += fixedCount;
+            },
+            Minimum(minCount) if availableValues >= minCount => {
+                self.matchedValues = Some(copyAllContigousValues(tokenStream));
+                newTokenStreamIndex += minCount;
+            },
+            Maximum(maxCount) => {
+                self.matchedValues = Some(copyContigousValues(tokenStream, &maxCount));
+                if availableValues > maxCount {
+                    newTokenStreamIndex += maxCount;
+                } else {
+                    newTokenStreamIndex += availableValues;
+                }
+            },
+            Range { min: minCount, max: maxCount } if availableValues >= minCount && availableValues <= maxCount => {
+                self.matchedValues = Some(copyContigousValues(tokenStream, &maxCount));
+                if availableValues > maxCount {
+                    newTokenStreamIndex += maxCount;
+                } else {
+                    newTokenStreamIndex += availableValues;
+                }
+            },
+            _ => (),
+        }
+
+        newTokenStreamIndex
+    }
+}

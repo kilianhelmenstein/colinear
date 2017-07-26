@@ -1,0 +1,6 @@
+[package]
+name = "colinear"
+version = "0.1.0"
+authors = ["neu"]
+
+[dependencies]
