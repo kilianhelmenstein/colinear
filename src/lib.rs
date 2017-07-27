@@ -91,3 +91,26 @@ fn test_Arg_takeTokens() {
         _ => panic!("takeTokens matched to no value!"),
     }
 }
+
+#[test]
+fn test_Parser_parse() {
+    use args::*;
+    use args::parser::*;
+
+    let argList = vec!(
+        String::from("-o"),
+        String::from("optval1"),
+        String::from("--option2"),
+        String::from("optval2"));
+    let tokenStream = tokens::tokenize(&argList);
+
+    let parser = Parser::new()
+                    .app("Colinear")
+                    .with_author("Kilian Helmenstein", "kilian.helmenstein@gmail.com")
+                    .with_arg(Arg::new()
+                                .with_name("Value ")
+                                .with_help("Opt 1")
+                                .as_option("-o", "--option")
+                                .takes_one_value());
+    parser.parse();
+}
