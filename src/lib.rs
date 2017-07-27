@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 pub mod args;
 
 #[test]
@@ -6,11 +8,11 @@ fn test_tokenize() {
     use args::tokens::*;
 
     let argList = vec!(
-        String::from("val1"), 
+        String::from("val1"),
         String::from("val2"),
-        String::from("-o"), 
-        String::from("optval1"), 
-        String::from("--option2"), 
+        String::from("-o"),
+        String::from("optval1"),
+        String::from("--option2"),
         String::from("optval2"));
 
     let tokenStream = tokens::tokenize(&argList);
@@ -52,26 +54,14 @@ fn test_Arg_takeTokens() {
     use args::tokens::*;
 
     let argList = vec!(
-        String::from("val1"), 
+        String::from("val1"),
         String::from("val2"),
-        String::from("-o"), 
-        String::from("optval1"), 
-        String::from("--option2"), 
+        String::from("-o"),
+        String::from("optval1"),
+        String::from("--option2"),
         String::from("optval2"));
 
     let tokenStream = tokens::tokenize(&argList);
-
-    let mut argVal1 = args::Arg::new()
-                    .with_name("Value 1")
-                    .with_help("just value 1")
-                    .on_index(0)
-                    .takes_one_value();
-    argVal1.takeTokensAtIndex(&0, &tokenStream);
-
-    match argVal1.matchedValues {
-        Some(ref matched_values) if matched_values.len() > 0 && matched_values[0] == String::from("val1") => (),
-        _ => panic!("takeTokens did not take tokens!"),
-    }
 
     let mut argOpt1 = args::Arg::new()
                     .with_name("Opt 1")

@@ -84,7 +84,7 @@ impl Arg {
             match tokenStream[0] {
                 Token::ShortName(ref name) if name == definedShortName => return self.extract_values(tokenStreamIndex, tokenStream),
                 Token::LongName(ref name) if name == definedLongName => return self.extract_values(tokenStreamIndex, tokenStream),
-                _ => (),
+                _ => println!("match_optionArg: Neither shortname nor longname token!"),
             }
         }
         tokenStreamIndex.clone()
@@ -93,23 +93,22 @@ impl Arg {
     fn extract_values(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
         use self::Count::*;
 
-        let mut newTokenStreamIndex = tokenStreamIndex.clone();
+        let tokenStreamIndex = *tokenStreamIndex as usize;
+        let mut newTokenStreamIndex = tokenStreamIndex.clone() as u32;
 
-        let availableValues = countAvailableContigousValues(tokenStream);
+        let availableValues = countAvailableContigousValues(&tokenStream[tokenStreamIndex..]);
+        println!("avail. values: {}", availableValues);
         match self.requiredValue.count {
             Fixed(fixedCount) if availableValues >= fixedCount => {
-                for copiedValue in copyContigousValues(tokenStream, &fixedCount) {
-                    println!("copied value= {}", copiedValue);
-                }
-                self.matchedValues = Some(copyContigousValues(tokenStream, &fixedCount));
+                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &fixedCount));
                 newTokenStreamIndex += fixedCount;
             },
             Minimum(minCount) if availableValues >= minCount => {
-                self.matchedValues = Some(copyAllContigousValues(tokenStream));
+                self.matchedValues = Some(copyAllContigousValues(&tokenStream[tokenStreamIndex..]));
                 newTokenStreamIndex += minCount;
             },
             Maximum(maxCount) => {
-                self.matchedValues = Some(copyContigousValues(tokenStream, &maxCount));
+                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
                 if availableValues > maxCount {
                     newTokenStreamIndex += maxCount;
                 } else {
@@ -117,7 +116,7 @@ impl Arg {
                 }
             },
             Range { min: minCount, max: maxCount } if availableValues >= minCount && availableValues <= maxCount => {
-                self.matchedValues = Some(copyContigousValues(tokenStream, &maxCount));
+                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
                 if availableValues > maxCount {
                     newTokenStreamIndex += maxCount;
                 } else {

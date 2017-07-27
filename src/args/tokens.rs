@@ -12,12 +12,15 @@ impl Token {
 
         if utils::indexInStringEqualsTo(&0, content, &'-') {
             if utils::indexInStringEqualsTo(&1, content, &'-') {
+                println!("{} is a LongName", &content);
                 return Token::LongName(contentString);
             } else {
+                println!("{} is a ShortName", &content);
                 return Token::ShortName(contentString);
             }
         }
 
+        println!("{} is a Value", &content);
         Token::Value(contentString)
     }
 }
