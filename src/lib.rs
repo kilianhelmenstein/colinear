@@ -68,11 +68,26 @@ fn test_Arg_takeTokens() {
                     .with_help("Opt 1")
                     .as_option("-o", "--option")
                     .takes_one_value();
-    argOpt1.takeTokensAtIndex(&2, &tokenStream);
+    let newIndex = argOpt1.takeTokensAtIndex(&tokenStream, &2);
+
+    if newIndex != 4 {
+        panic!("takeTokensAtIndex delivered false resulting index");
+    }
 
     match argOpt1.matchedValues {
         //Some(ref matched_values) if matched_values.len() > 0 && matched_values[0] == String::from("optval1") => (),
-        Some(matched_values) => println!("Matched value {}", matched_values[0]),
-        _ => panic!("takeTokens did not take tokens!"),
+        Some(ref matched_values) if matched_values.len() > 0 => {
+            if let Some(matched_value) = matched_values.first() {
+                if *matched_value == String::from("optval1") {
+                    println!("Matched right value: {}", matched_value);
+                } else {
+                    panic!("Matched false value: {}", matched_value)
+                }
+            } else {
+                panic!("Matched invalid value: {}")
+            }
+        },
+        Some(ref matched_values) => panic!("takeTokens matched false value"),
+        _ => panic!("takeTokens matched to no value!"),
     }
 }
