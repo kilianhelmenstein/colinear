@@ -63,7 +63,7 @@ impl Arg {
         self
     }
 
-    pub fn takeTokensAtIndex(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+    pub fn takeTokens(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
         match self.kindOf {
             Type::OnIndex{..} => return self.match_positionalArg(tokenStreamIndex, tokenStream),
             Type::AsOption{..} => return self.match_optionArg(tokenStreamIndex, tokenStream),
@@ -84,6 +84,9 @@ impl Arg {
             match tokenStream[0] {
                 Token::ShortName(ref name) if name == definedShortName => return self.extract_values(tokenStreamIndex, tokenStream),
                 Token::LongName(ref name) if name == definedLongName => return self.extract_values(tokenStreamIndex, tokenStream),
+                Token::ShortName(ref name) => println!("match_optionArg: ShortName is {}", name),
+                Token::LongName(ref name)  => println!("match_optionArg: LongName is {}", name),
+                Token::Value(ref value) => println!("match_optionArg: Value is {}", value),
                 _ => println!("match_optionArg: Neither shortname nor longname token!"),
             }
         }
