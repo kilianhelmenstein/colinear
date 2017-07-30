@@ -22,7 +22,7 @@ pub struct Meta {
 }
 
 pub struct Arg {
-    pub meta: Meta,
+    meta: Meta,
     kindOf: Type,
     requiredValue: InputValueDef,
     pub matchedValues: Option<Vec<String>>
@@ -38,9 +38,17 @@ impl Arg {
         }
     }
 
+    pub fn name(&self) -> String {
+        String::from(self.meta.name)
+    }
+
     pub fn with_name(mut self, name: &'static str) -> Arg {
         self.meta.name = name;
         self
+    }
+
+    pub fn help(&self) -> String {
+        String::from(self.meta.help)
     }
 
     pub fn with_help(mut self, help: &'static str) -> Arg {
