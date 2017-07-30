@@ -38,28 +38,30 @@ impl Parser {
         self
     }
 
-    pub fn value(&self, arg_name: &str) -> Option<String> {
+    fn find_matched_values(&self, arg_name: &str) -> Option<&Vec<String>> {
         for arg in &self.configured_args {
-            if *arg.meta.name == *arg_name {
+            if arg.name() == arg_name {
                 return match arg.matchedValues {
-                    Some(ref values) => Some(values[0].clone()),
-                    None => None,
+                    Some(ref matched_values) => Some(matched_values),
+                    _ => None,
                 }
             }
         }
         None
     }
 
-    pub fn values(&self, arg_name: &str) -> Option<Vec<String>> {
-        for arg in &self.configured_args {
-            if *arg.meta.name == *arg_name {
-                return match arg.matchedValues {
-                    Some(ref values) => Some(values.clone()),
-                    None => None,
-                }
-            }
+    pub fn value(&self, arg_name: &str) -> Option<String> {
+        return match self.find_matched_values(arg_name) {
+            Some(matched_values) if matched_values.len() > 0 => Some(matched_values[0].clone()),
+            _ => None
         }
-        None
+    }
+
+    pub fn values(&self, arg_name: &str) -> Option<Vec<String>> {
+        return match self.find_matched_values(arg_name) {
+            Some(matched_values) => Some(matched_values.clone()),
+            _ => None
+        }
     }
 
     pub fn parse_token_stream(&mut self, token_stream: &[tokens::Token]) {
