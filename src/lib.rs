@@ -49,7 +49,46 @@ fn test_tokenize() {
 }
 
 #[test]
-fn test_Arg_takeTokens() {
+fn test_Arg_takeTokens_index() {
+    use args::*;
+    use args::tokens::*;
+
+    let argList = vec!(
+        String::from("val1"),
+        String::from("val2"));
+
+    let tokenStream = tokens::tokenize(&argList);
+
+    let mut argIndex0 = args::Arg::new()
+                    .with_name("Index 1")
+                    .with_help("Index 1")
+                    .on_index(0)
+                    .takes_one_value();
+    let newIndex = argIndex0.takeTokensAtIndex(&tokenStream, &0);
+
+    if newIndex != 1 {
+        panic!("takeTokensAtIndex delivered false resulting index");
+    }
+
+    match argIndex0.matchedValues {
+        Some(ref matched_values) if matched_values.len() > 0 => {
+            if let Some(matched_value) = matched_values.first() {
+                if *matched_value == String::from("val1") {
+                    println!("Matched right value: {}", matched_value);
+                } else {
+                    panic!("Matched false value: {}", matched_value)
+                }
+            } else {
+                panic!("Matched invalid value: {}")
+            }
+        },
+        Some(ref matched_values) => panic!("takeTokens matched false value"),
+        _ => panic!("takeTokens matched to no value!"),
+    }
+}
+
+#[test]
+fn test_Arg_takeTokens_option() {
     use args::*;
     use args::tokens::*;
 
@@ -98,19 +137,55 @@ fn test_Parser_parse() {
     use args::parser::*;
 
     let argList = vec!(
+        String::from("val1"),
+        //String::from("val2"),
         String::from("-o"),
         String::from("optval1"),
         String::from("--option2"),
         String::from("optval2"));
     let tokenStream = tokens::tokenize(&argList);
 
-    let parser = Parser::new()
+    let mut parser = Parser::new()
                     .app("Colinear")
                     .with_author("Kilian Helmenstein", "kilian.helmenstein@gmail.com")
-                    .with_arg(Arg::new()
-                                .with_name("Value ")
+                    .with_arg(args::Arg::new()
+                                .with_name("Pos 1")
+                                .with_help("Pos 1")
+                                .on_index(0)
+                                .takes_one_value())
+                    .with_arg(args::Arg::new()
+                                .with_name("Option 1")
                                 .with_help("Opt 1")
                                 .as_option("-o", "--option")
+                                .takes_one_value())
+                    .with_arg(args::Arg::new()
+                                .with_name("Option 2")
+                                .with_help("Opt 2")
+                                .as_option("-p", "--option2")
                                 .takes_one_value());
-    parser.parse();
+    parser.parse_token_stream(&tokenStream);
+
+    if let Some(value1_content) = parser.value("Pos 1") {
+        if value1_content != "val1" {
+            panic!("Matched, but value is false ({})", "Pos 1");
+        }
+    } else {
+        panic!("Not matched ({})", "Pos 1");
+    }
+
+    if let Some(opt1_content) = parser.value("Option 1") {
+        if opt1_content != "optval1" {
+            panic!("Matched, but value is false ({})", "Option 1");
+        }
+    } else {
+        panic!("Not matched ({})", "Option 1");
+    }
+
+    if let Some(opt2_content) = parser.value("Option 2") {
+        if opt2_content != "optval2" {
+            panic!("Matched, but value is false ({})", "Option 2");
+        }
+    } else {
+        panic!("Not matched ({})", "Option 2");
+    }
 }
