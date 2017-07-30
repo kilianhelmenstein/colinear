@@ -16,13 +16,13 @@ enum Type {
     AsOption { shortName: &'static str, longName: &'static str }
 }
 
-struct Meta {
-    name: &'static str,
-    help: &'static str
+pub struct Meta {
+    pub name: &'static str,
+    pub help: &'static str
 }
 
 pub struct Arg {
-    meta: Meta,
+    pub meta: Meta,
     kindOf: Type,
     requiredValue: InputValueDef,
     pub matchedValues: Option<Vec<String>>
@@ -73,7 +73,7 @@ impl Arg {
     fn match_positionalArg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
         if let Type::OnIndex{ index: configuredPosition } = self.kindOf {
             if *tokenStreamIndex == configuredPosition {
-                self.extract_values(tokenStreamIndex, tokenStream);
+                return self.extract_values(tokenStreamIndex, tokenStream);
             }
         }
         tokenStreamIndex.clone()
