@@ -38,13 +38,37 @@ impl Parser {
         self
     }
 
-    pub fn parse_token_stream(&mut self, token_stream: &Vec<tokens::Token>) {
-        let mut stream_index: u32 = 1;
+    pub fn value(&self, arg_name: &str) -> Option<String> {
+        for arg in &self.configured_args {
+            if *arg.meta.name == *arg_name {
+                return match arg.matchedValues {
+                    Some(ref values) => Some(values[0].clone()),
+                    None => None,
+                }
+            }
+        }
+        None
+    }
+
+    pub fn values(&self, arg_name: &str) -> Option<Vec<String>> {
+        for arg in &self.configured_args {
+            if *arg.meta.name == *arg_name {
+                return match arg.matchedValues {
+                    Some(ref values) => Some(values.clone()),
+                    None => None,
+                }
+            }
+        }
+        None
+    }
+
+    pub fn parse_token_stream(&mut self, token_stream: &[tokens::Token]) {
+        let mut stream_index: u32 = 0;
 
         while stream_index < token_stream.len() as u32 {
             let mut resulting_stream_index = stream_index;
 
-            for arg in self.configured_args.iter() {
+            for arg in &mut self.configured_args {
                 resulting_stream_index = arg.takeTokensAtIndex(token_stream, &stream_index);
                 if resulting_stream_index > stream_index {
                     break;
@@ -54,6 +78,8 @@ impl Parser {
             let no_argument_matched = resulting_stream_index == stream_index;
             if no_argument_matched {
                 panic!("No match for argument token at index {}", stream_index);
+            } else {
+                stream_index = resulting_stream_index;
             }
         }
     }
@@ -61,6 +87,6 @@ impl Parser {
     pub fn parse(&mut self) {
         let cl_arguments: Vec<String> = env::args().collect();
         let token_stream = tokens::tokenize(&cl_arguments);
-        self.parse_token_stream(&token_stream);
+        self.parse_token_stream(&token_stream[1..]);
     }
 }
