@@ -92,3 +92,67 @@ impl Parser {
         self.parse_token_stream(&token_stream[1..]);
     }
 }
+
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn parse_positionalAndOptionalArguments_allMatch() {
+        use args::*;
+        use args::parser::*;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            //String::from("val2"),
+            String::from("-o"),
+            String::from("optval1"),
+            String::from("--option2"),
+            String::from("optval2"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut parser = Parser::new()
+                        .app("Colinear")
+                        .with_author("Kilian Helmenstein", "kilian.helmenstein@gmail.com")
+                        .with_arg(args::Arg::new()
+                                    .with_name("Pos 1")
+                                    .with_help("Pos 1")
+                                    .on_index(0)
+                                    .takes_one_value())
+                        .with_arg(args::Arg::new()
+                                    .with_name("Option 1")
+                                    .with_help("Opt 1")
+                                    .as_option("-o", "--option")
+                                    .takes_one_value())
+                        .with_arg(args::Arg::new()
+                                    .with_name("Option 2")
+                                    .with_help("Opt 2")
+                                    .as_option("-p", "--option2")
+                                    .takes_one_value());
+        parser.parse_token_stream(&token_stream);
+
+        if let Some(value1_content) = parser.value("Pos 1") {
+            if value1_content != "val1" {
+                panic!("Matched, but value is false ({})", "Pos 1");
+            }
+        } else {
+            panic!("Not matched ({})", "Pos 1");
+        }
+
+        if let Some(opt1_content) = parser.value("Option 1") {
+            if opt1_content != "optval1" {
+                panic!("Matched, but value is false ({})", "Option 1");
+            }
+        } else {
+            panic!("Not matched ({})", "Option 1");
+        }
+
+        if let Some(opt2_content) = parser.value("Option 2") {
+            if opt2_content != "optval2" {
+                panic!("Matched, but value is false ({})", "Option 2");
+            }
+        } else {
+            panic!("Not matched ({})", "Option 2");
+        }
+    }
+}
