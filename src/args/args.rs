@@ -137,3 +137,94 @@ impl Arg {
         newTokenStreamIndex
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::Arg;
+
+    fn check_match_result(dut: &Arg, shall_matched_value: &str) {
+        match dut.matchedValues {
+            Some(ref matched_values) if matched_values.len() > 0 => {
+                if let Some(matched_value) = matched_values.first() {
+                    if *matched_value == String::from(shall_matched_value) {
+                        println!("Matched right value: {}", matched_value);
+                    } else {
+                        panic!("Matched value is '{}', but should be '{}'", matched_value, shall_matched_value)
+                    }
+                } else {
+                    panic!("Matched invalid value: {}")
+                }
+            },
+            Some(ref matched_values) => panic!("Matched, but match count is zero"),
+            _ => panic!("Matched no value"),
+        }
+    }
+
+    fn check_resulting_index(shall: u32, is: u32) {
+        if shall != is {
+            panic!("Delivered false resulting index (Shall be '{}', but is '{}')", shall, is);
+        }
+    }
+
+    #[test]
+    fn takeTokensAtIndex_onindex_matches() {
+        use args::*;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            String::from("val2"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument_1st = args::Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_one_value();
+        let mut argument_2nd = args::Arg::new()
+                        .with_name("Index 1")
+                        .with_help("Index 1")
+                        .on_index(1)
+                        .takes_one_value();
+        let resulting_index_1st = argument_1st.takeTokensAtIndex(&token_stream, &0);
+        check_resulting_index(1, resulting_index_1st);
+        check_match_result(&argument_1st, "val1");
+
+        let resulting_index_2nd = argument_2nd.takeTokensAtIndex(&token_stream, &1);
+        check_resulting_index(2, resulting_index_2nd);
+        check_match_result(&argument_2nd, "val2");
+    }
+
+    #[test]
+    fn takeTokensAtIndex_asoption_matches() {
+        use args::*;
+
+        let argList = vec!(
+            String::from("val1"),
+            String::from("val2"),
+            String::from("-o"),
+            String::from("optval1"),
+            String::from("--option2"),
+            String::from("optval2"));
+
+        let tokenStream = tokens::tokenize(&argList);
+
+        let mut argument_1st_option = args::Arg::new()
+                        .with_name("Opt 1")
+                        .with_help("Opt 1")
+                        .as_option("-o", "--option")
+                        .takes_one_value();
+        let mut argument_2nd_option = args::Arg::new()
+                        .with_name("Opt 2")
+                        .with_help("Opt 2")
+                        .as_option("-p", "--option2")
+                        .takes_one_value();
+
+        let resulting_index = argument_1st_option.takeTokensAtIndex(&tokenStream, &2);
+        check_resulting_index(4, resulting_index);
+        check_match_result(&argument_1st_option, "optval1");
+
+        let resulting_index = argument_2nd_option.takeTokensAtIndex(&tokenStream, &4);
+        check_resulting_index(6, resulting_index);
+        check_match_result(&argument_2nd_option, "optval2");
+    }
+}
