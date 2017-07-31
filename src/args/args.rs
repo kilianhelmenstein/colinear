@@ -1,19 +1,10 @@
 use args::tokens::*;
 
-enum Count {
-    Fixed(u32),
-    Minimum(u32),
-    Maximum(u32),
-    Range { min: u32, max: u32 }
-}
-
-struct InputValueDef {
-    count: Count
-}
-
-enum Type {
-    OnIndex { index: u32 },
-    AsOption { shortName: &'static str, longName: &'static str }
+pub struct Arg {
+    meta: Meta,
+    kindOf: Type,
+    required_values_specification: Count,
+    pub matchedValues: Option<Vec<String>>
 }
 
 pub struct Meta {
@@ -21,11 +12,16 @@ pub struct Meta {
     pub help: &'static str
 }
 
-pub struct Arg {
-    meta: Meta,
-    kindOf: Type,
-    requiredValue: InputValueDef,
-    pub matchedValues: Option<Vec<String>>
+enum Type {
+    OnIndex { index: u32 },
+    AsOption { shortName: &'static str, longName: &'static str }
+}
+
+enum Count {
+    Fixed(u32),
+    Minimum(u32),
+    Maximum(u32),
+    Range { min: u32, max: u32 }
 }
 
 impl Arg {
@@ -33,7 +29,7 @@ impl Arg {
         Arg {
             meta: Meta { name: "", help: "" },
             kindOf: Type::OnIndex{ index: 0 },
-            requiredValue: InputValueDef { count: Count::Fixed(0) },
+            required_values_specification: Count::Fixed(0),
             matchedValues: None
         }
     }
@@ -67,7 +63,7 @@ impl Arg {
     }
 
     pub fn takes_one_value(mut self) -> Arg {
-        self.requiredValue = InputValueDef { count: Count::Fixed(1) };
+        self.required_values_specification = Count::Fixed(1);
         self
     }
 
@@ -106,7 +102,7 @@ impl Arg {
 
         let availableValues = countAvailableContigousValues(&tokenStream[tokenStreamIndex..]);
         println!("avail. values: {}", availableValues);
-        match self.requiredValue.count {
+        match self.required_values_specification {
             Fixed(fixedCount) if availableValues >= fixedCount => {
                 self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &fixedCount));
                 newTokenStreamIndex += fixedCount;
@@ -168,19 +164,20 @@ mod test {
 
     #[test]
     fn takeTokensAtIndex_onindex_matches() {
-        use args::*;
+        use super::Arg;
+        use super::super::tokens;
 
         let argument_list = vec!(
             String::from("val1"),
             String::from("val2"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument_1st = args::Arg::new()
+        let mut argument_1st = Arg::new()
                         .with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_one_value();
-        let mut argument_2nd = args::Arg::new()
+        let mut argument_2nd = Arg::new()
                         .with_name("Index 1")
                         .with_help("Index 1")
                         .on_index(1)
@@ -196,7 +193,8 @@ mod test {
 
     #[test]
     fn takeTokensAtIndex_asoption_matches() {
-        use args::*;
+        use super::Arg;
+        use super::super::tokens;
 
         let argList = vec!(
             String::from("val1"),
@@ -208,12 +206,12 @@ mod test {
 
         let tokenStream = tokens::tokenize(&argList);
 
-        let mut argument_1st_option = args::Arg::new()
+        let mut argument_1st_option = Arg::new()
                         .with_name("Opt 1")
                         .with_help("Opt 1")
                         .as_option("-o", "--option")
                         .takes_one_value();
-        let mut argument_2nd_option = args::Arg::new()
+        let mut argument_2nd_option = Arg::new()
                         .with_name("Opt 2")
                         .with_help("Opt 2")
                         .as_option("-p", "--option2")

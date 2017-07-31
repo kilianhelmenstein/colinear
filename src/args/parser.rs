@@ -3,16 +3,17 @@ use super::tokens;
 
 use std::env;
 
+pub struct Parser {
+    meta: AppMeta,
+    configured_args: Vec<Arg>
+}
+
 struct AppMeta {
     app_name: &'static str,
     author_name: &'static str,
     author_email: &'static str
 }
 
-pub struct Parser {
-    meta: AppMeta,
-    configured_args: Vec<Arg>
-}
 
 impl Parser {
     pub fn new() -> Parser {
@@ -33,7 +34,7 @@ impl Parser {
         self
     }
 
-    pub fn with_arg(mut self, mut argument: Arg) -> Parser {
+    pub fn with_arg(mut self, argument: Arg) -> Parser {
         self.configured_args.push(argument);
         self
     }
@@ -99,8 +100,9 @@ mod test {
 
     #[test]
     fn parse_positionalAndOptionalArguments_allMatch() {
-        use args::*;
-        use args::parser::*;
+        use super::super::args;
+        use super::super::tokens;
+        use super::Parser;
 
         let argument_list = vec!(
             String::from("val1"),
