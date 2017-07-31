@@ -94,10 +94,8 @@ impl Parser {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-
     #[test]
     fn parse_positionalAndOptionalArguments_allMatch() {
         use super::super::args;
