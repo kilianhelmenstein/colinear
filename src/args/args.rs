@@ -2,9 +2,9 @@ use args::tokens::*;
 
 pub struct Arg {
     meta: Meta,
-    kindOf: Type,
+    kind_of: Type,
     required_values_specification: Count,
-    pub matchedValues: Option<Vec<String>>
+    pub matched_values: Option<Vec<String>>
 }
 
 pub struct Meta {
@@ -14,7 +14,7 @@ pub struct Meta {
 
 enum Type {
     OnIndex { index: u32 },
-    AsOption { shortName: &'static str, longName: &'static str }
+    AsOption { short_name: &'static str, long_name: &'static str }
 }
 
 enum Count {
@@ -28,9 +28,9 @@ impl Arg {
     pub fn new() -> Arg {
         Arg {
             meta: Meta { name: "", help: "" },
-            kindOf: Type::OnIndex{ index: 0 },
+            kind_of: Type::OnIndex{ index: 0 },
             required_values_specification: Count::Fixed(0),
-            matchedValues: None
+            matched_values: None
         }
     }
 
@@ -53,12 +53,12 @@ impl Arg {
     }
 
     pub fn on_index(mut self, index: u32) -> Arg {
-        self.kindOf = Type::OnIndex { index: index };
+        self.kind_of = Type::OnIndex { index: index };
         self
     }
 
     pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> Arg {
-        self.kindOf = Type::AsOption { shortName: short_name, longName: long_name };
+        self.kind_of = Type::AsOption { short_name: short_name, long_name: long_name };
         self
     }
 
@@ -67,15 +67,15 @@ impl Arg {
         self
     }
 
-    pub fn takeTokensAtIndex(&mut self, tokenStream: &[Token], tokenStreamIndex: &u32) -> u32 {
-        match self.kindOf {
-            Type::OnIndex{..} => return self.match_positionalArg(tokenStreamIndex, tokenStream),
-            Type::AsOption{..} => return self.match_optionArg(tokenStreamIndex, tokenStream),
+    pub fn take_tokens_at_index(&mut self, tokenStream: &[Token], tokenStreamIndex: &u32) -> u32 {
+        match self.kind_of {
+            Type::OnIndex{..} => return self.match_positional_arg(tokenStreamIndex, tokenStream),
+            Type::AsOption{..} => return self.match_optional_arg(tokenStreamIndex, tokenStream),
         }
     }
 
-    fn match_positionalArg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
-        if let Type::OnIndex{ index: configuredPosition } = self.kindOf {
+    fn match_positional_arg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        if let Type::OnIndex{ index: configuredPosition } = self.kind_of {
             if *tokenStreamIndex == configuredPosition {
                 return self.extract_values(tokenStreamIndex, tokenStream);
             }
@@ -83,11 +83,11 @@ impl Arg {
         tokenStreamIndex.clone()
     }
 
-    fn match_optionArg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
-        if let Type::AsOption{ shortName: definedShortName, longName: definedLongName} = self.kindOf {
+    fn match_optional_arg(&mut self, tokenStreamIndex: &u32, tokenStream: &[Token]) -> u32 {
+        if let Type::AsOption{ short_name: definedshort_name, long_name: definedlong_name} = self.kind_of {
             match tokenStream[*tokenStreamIndex as usize] {
-                Token::ShortName(ref name) if name == definedShortName => return self.extract_values(&(tokenStreamIndex+1), &tokenStream),
-                Token::LongName(ref name) if name == definedLongName => return self.extract_values(&(tokenStreamIndex+1), &tokenStream),
+                Token::ShortName(ref name) if name == definedshort_name => return self.extract_values(&(tokenStreamIndex+1), &tokenStream),
+                Token::LongName(ref name) if name == definedlong_name => return self.extract_values(&(tokenStreamIndex+1), &tokenStream),
                 _ => (),
             }
         }
@@ -104,15 +104,15 @@ impl Arg {
         println!("avail. values: {}", availableValues);
         match self.required_values_specification {
             Fixed(fixedCount) if availableValues >= fixedCount => {
-                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &fixedCount));
+                self.matched_values = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &fixedCount));
                 newTokenStreamIndex += fixedCount;
             },
             Minimum(minCount) if availableValues >= minCount => {
-                self.matchedValues = Some(copyAllContigousValues(&tokenStream[tokenStreamIndex..]));
+                self.matched_values = Some(copyAllContigousValues(&tokenStream[tokenStreamIndex..]));
                 newTokenStreamIndex += minCount;
             },
             Maximum(maxCount) => {
-                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
+                self.matched_values = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
                 if availableValues > maxCount {
                     newTokenStreamIndex += maxCount;
                 } else {
@@ -120,7 +120,7 @@ impl Arg {
                 }
             },
             Range { min: minCount, max: maxCount } if availableValues >= minCount && availableValues <= maxCount => {
-                self.matchedValues = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
+                self.matched_values = Some(copyContigousValues(&tokenStream[tokenStreamIndex..], &maxCount));
                 if availableValues > maxCount {
                     newTokenStreamIndex += maxCount;
                 } else {
@@ -139,7 +139,7 @@ mod test {
     use super::Arg;
 
     fn check_match_result(dut: &Arg, shall_matched_value: &str) {
-        match dut.matchedValues {
+        match dut.matched_values {
             Some(ref matched_values) if matched_values.len() > 0 => {
                 if let Some(matched_value) = matched_values.first() {
                     if *matched_value == String::from(shall_matched_value) {
@@ -163,7 +163,7 @@ mod test {
     }
 
     #[test]
-    fn takeTokensAtIndex_onindex_matches() {
+    fn take_tokens_at_index_onindex_matches() {
         use super::Arg;
         use super::super::tokens;
 
@@ -182,17 +182,17 @@ mod test {
                         .with_help("Index 1")
                         .on_index(1)
                         .takes_one_value();
-        let resulting_index_1st = argument_1st.takeTokensAtIndex(&token_stream, &0);
+        let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &0);
         check_resulting_index(1, resulting_index_1st);
         check_match_result(&argument_1st, "val1");
 
-        let resulting_index_2nd = argument_2nd.takeTokensAtIndex(&token_stream, &1);
+        let resulting_index_2nd = argument_2nd.take_tokens_at_index(&token_stream, &1);
         check_resulting_index(2, resulting_index_2nd);
         check_match_result(&argument_2nd, "val2");
     }
 
     #[test]
-    fn takeTokensAtIndex_asoption_matches() {
+    fn take_tokens_at_index_asoption_matches() {
         use super::Arg;
         use super::super::tokens;
 
@@ -217,11 +217,11 @@ mod test {
                         .as_option("-p", "--option2")
                         .takes_one_value();
 
-        let resulting_index = argument_1st_option.takeTokensAtIndex(&tokenStream, &2);
+        let resulting_index = argument_1st_option.take_tokens_at_index(&tokenStream, &2);
         check_resulting_index(4, resulting_index);
         check_match_result(&argument_1st_option, "optval1");
 
-        let resulting_index = argument_2nd_option.takeTokensAtIndex(&tokenStream, &4);
+        let resulting_index = argument_2nd_option.take_tokens_at_index(&tokenStream, &4);
         check_resulting_index(6, resulting_index);
         check_match_result(&argument_2nd_option, "optval2");
     }

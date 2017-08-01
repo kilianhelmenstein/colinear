@@ -42,7 +42,7 @@ impl Parser {
     fn find_matched_values(&self, arg_name: &str) -> Option<&Vec<String>> {
         for arg in &self.configured_args {
             if arg.name() == arg_name {
-                return match arg.matchedValues {
+                return match arg.matched_values {
                     Some(ref matched_values) => Some(matched_values),
                     _ => None,
                 }
@@ -72,7 +72,7 @@ impl Parser {
             let mut resulting_stream_index = stream_index;
 
             for arg in &mut self.configured_args {
-                resulting_stream_index = arg.takeTokensAtIndex(token_stream, &stream_index);
+                resulting_stream_index = arg.take_tokens_at_index(token_stream, &stream_index);
                 if resulting_stream_index > stream_index {
                     break;
                 }
