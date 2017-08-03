@@ -133,6 +133,7 @@ impl Arg {
                 self.matched_values = Some(copy_all_contigous_values(&token_stream[token_stream_index..]));
                 new_token_stream_index += available_values;
             },
+            Minimum(_) => return Err("To few arguments"),
             Maximum(max_count) => {
                 self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &max_count));
                 if available_values > max_count {
@@ -237,6 +238,52 @@ mod test {
                 assert_eq!(&matched_values[0], "val1");
                 assert_eq!(&matched_values[1], "val2");
                 assert_eq!(&matched_values[2], "val3");
+            },
+            _ => panic!("Matched no values"),
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn take_tokens_at_index__onindex_mincount__panics() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_min_values(2);
+        argument.take_tokens_at_index(&token_stream, &0).unwrap();
+    }
+
+    #[test]
+    fn take_tokens_at_index__onindex_maxcount__matches() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            String::from("val2"),
+            String::from("val3"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_max_values(2);
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
+        check_resulting_index(2, resulting_index);
+        let matched_values = argument.matched_values;
+        match matched_values {
+            Some(ref matched_values) if matched_values.len() == 2 => {
+                assert_eq!(&matched_values[0], "val1");
+                assert_eq!(&matched_values[1], "val2");
             },
             _ => panic!("Matched no values"),
         }
