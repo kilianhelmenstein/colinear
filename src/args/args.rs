@@ -196,7 +196,7 @@ mod test {
         use super::Arg;
         use super::super::tokens;
 
-        let argList = vec!(
+        let arg_list = vec!(
             String::from("val1"),
             String::from("val2"),
             String::from("-o"),
@@ -204,7 +204,7 @@ mod test {
             String::from("--option2"),
             String::from("optval2"));
 
-        let token_stream = tokens::tokenize(&argList);
+        let token_stream = tokens::tokenize(&arg_list);
 
         let mut argument_1st_option = Arg::new()
                         .with_name("Opt 1")
