@@ -67,23 +67,44 @@ impl Arg {
         self
     }
 
-    pub fn take_tokens_at_index(&mut self, token_stream: &[Token], token_stream_index: &u32) -> u32 {
+    pub fn takes_n_values(mut self, n: u32) -> Arg {
+        self.required_values_specification = Count::Fixed(n);
+        self
+    }
+
+    pub fn takes_min_values(mut self, min: u32) -> Arg {
+        self.required_values_specification = Count::Minimum(min);
+        self
+    }
+
+    pub fn takes_max_values(mut self, max: u32) -> Arg {
+        self.required_values_specification = Count::Maximum(max);
+        self
+    }
+
+    pub fn takes_min_max_values(mut self, min: u32, max: u32) -> Arg {
+        self.required_values_specification = Count::Range { min: min, max: max };
+        self
+    }
+
+    pub fn take_tokens_at_index(&mut self, token_stream: &[Token], token_stream_index: &u32) -> Result<u32, &'static str> {
         match self.kind_of {
             Type::OnIndex{..} => return self.match_positional_arg(token_stream_index, token_stream),
             Type::AsOption{..} => return self.match_optional_arg(token_stream_index, token_stream),
         }
     }
 
-    fn match_positional_arg(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> u32 {
+    fn match_positional_arg(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> Result<u32, &'static str> {
         if let Type::OnIndex{ index: configured_position } = self.kind_of {
             if *token_stream_index == configured_position {
                 return self.extract_values(token_stream_index, token_stream);
             }
         }
-        token_stream_index.clone()
+
+        Ok(token_stream_index.clone())
     }
 
-    fn match_optional_arg(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> u32 {
+    fn match_optional_arg(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> Result<u32, &'static str> {
         if let Type::AsOption{ short_name: defined_short_name, long_name: defined_long_name} = self.kind_of {
             match token_stream[*token_stream_index as usize] {
                 Token::ShortName(ref name) if name == defined_short_name => return self.extract_values(&(token_stream_index+1), &token_stream),
@@ -91,10 +112,11 @@ impl Arg {
                 _ => (),
             }
         }
-        token_stream_index.clone()
+
+        Ok(token_stream_index.clone())
     }
 
-    fn extract_values(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> u32 {
+    fn extract_values(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> Result<u32, &'static str> {
         use self::Count::*;
 
         let token_stream_index = *token_stream_index as usize;
@@ -109,7 +131,7 @@ impl Arg {
             },
             Minimum(min_count) if available_values >= min_count => {
                 self.matched_values = Some(copy_all_contigous_values(&token_stream[token_stream_index..]));
-                new_token_stream_index += min_count;
+                new_token_stream_index += available_values;
             },
             Maximum(max_count) => {
                 self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &max_count));
@@ -130,7 +152,7 @@ impl Arg {
             _ => (),
         }
 
-        new_token_stream_index
+        Ok(new_token_stream_index)
     }
 }
 
@@ -163,7 +185,7 @@ mod test {
     }
 
     #[test]
-    fn take_tokens_at_index_onindex_matches() {
+    fn take_tokens_at_index__onindex_fixedcount_is_1__matches() {
         use super::Arg;
         use super::super::tokens;
 
@@ -182,17 +204,46 @@ mod test {
                         .with_help("Index 1")
                         .on_index(1)
                         .takes_one_value();
-        let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &0);
+        let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(1, resulting_index_1st);
         check_match_result(&argument_1st, "val1");
 
-        let resulting_index_2nd = argument_2nd.take_tokens_at_index(&token_stream, &1);
+        let resulting_index_2nd = argument_2nd.take_tokens_at_index(&token_stream, &1).unwrap();
         check_resulting_index(2, resulting_index_2nd);
         check_match_result(&argument_2nd, "val2");
     }
 
     #[test]
-    fn take_tokens_at_index_asoption_matches() {
+    fn take_tokens_at_index__onindex_mincount__matches() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            String::from("val2"),
+            String::from("val3"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_min_values(2);
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
+        check_resulting_index(3, resulting_index);
+        let matched_values = argument.matched_values;
+        match matched_values {
+            Some(ref matched_values) if matched_values.len() == 3 => {
+                assert_eq!(&matched_values[0], "val1");
+                assert_eq!(&matched_values[1], "val2");
+                assert_eq!(&matched_values[2], "val3");
+            },
+            _ => panic!("Matched no values"),
+        }
+    }
+
+    #[test]
+    fn take_tokens_at_index__asoption__matches() {
         use super::Arg;
         use super::super::tokens;
 
@@ -217,11 +268,11 @@ mod test {
                         .as_option("-p", "--option2")
                         .takes_one_value();
 
-        let resulting_index = argument_1st_option.take_tokens_at_index(&token_stream, &2);
+        let resulting_index = argument_1st_option.take_tokens_at_index(&token_stream, &2).unwrap();
         check_resulting_index(4, resulting_index);
         check_match_result(&argument_1st_option, "optval1");
 
-        let resulting_index = argument_2nd_option.take_tokens_at_index(&token_stream, &4);
+        let resulting_index = argument_2nd_option.take_tokens_at_index(&token_stream, &4).unwrap();
         check_resulting_index(6, resulting_index);
         check_match_result(&argument_2nd_option, "optval2");
     }

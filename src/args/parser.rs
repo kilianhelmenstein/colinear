@@ -72,7 +72,10 @@ impl Parser {
             let mut resulting_stream_index = stream_index;
 
             for arg in &mut self.configured_args {
-                resulting_stream_index = arg.take_tokens_at_index(token_stream, &stream_index);
+                match arg.take_tokens_at_index(token_stream, &stream_index) {
+                    Ok(resulting_index) => resulting_stream_index = resulting_index,
+                    Err(message) => panic!("{}", message),
+                }
                 if resulting_stream_index > stream_index {
                     break;
                 }
