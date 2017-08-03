@@ -8,54 +8,54 @@ pub enum Token {
 
 impl Token {
     pub fn new(content: &str) -> Token {
-        let contentString = String::from(content);
+        let content_string = String::from(content);
 
-        if utils::indexInStringEqualsTo(&0, content, &'-') {
-            if utils::indexInStringEqualsTo(&1, content, &'-') {
-                return Token::LongName(contentString);
+        if utils::index_in_string_equals_to(&0, content, &'-') {
+            if utils::index_in_string_equals_to(&1, content, &'-') {
+                return Token::LongName(content_string);
             } else {
-                return Token::ShortName(contentString);
+                return Token::ShortName(content_string);
             }
         }
-        Token::Value(contentString)
+        Token::Value(content_string)
     }
 }
 
 pub fn tokenize(arguments: &[String]) -> Vec<Token>
 {
-    let mut tokenStream = Vec::new();
+    let mut token_stream = Vec::new();
     for arg in arguments {
-        tokenStream.push(Token::new(arg));
+        token_stream.push(Token::new(arg));
     }
-    tokenStream
+    token_stream
 }
 
-pub fn countAvailableContigousValues(tokenStream: &[Token]) -> u32 {
-    let mut contigousValueTokensCount = 0;
+pub fn count_available_contigous_values(token_stream: &[Token]) -> u32 {
+    let mut contigous_value_tokens_count = 0;
 
-    for token in tokenStream {
+    for token in token_stream {
         if let Token::Value(..) = *token {
-            contigousValueTokensCount += 1;
+            contigous_value_tokens_count += 1;
         }
     }
-    contigousValueTokensCount
+    contigous_value_tokens_count
 }
 
-pub fn copyContigousValues(tokenStream: &[Token], maxCount: &u32) -> Vec<String> {
-    let mut contigousValues = Vec::new();
-    for token in tokenStream {
+pub fn copy_contigous_values(token_stream: &[Token], max_count: &u32) -> Vec<String> {
+    let mut contigous_values = Vec::new();
+    for token in token_stream {
         if let Token::Value(ref value) = *token {
-            contigousValues.push(value.clone());
-            if contigousValues.len() >= *maxCount as usize {
+            contigous_values.push(value.clone());
+            if contigous_values.len() >= *max_count as usize {
                 break;
             }
         }
     }
-    contigousValues
+    contigous_values
 }
 
-pub fn copyAllContigousValues(tokenStream: &[Token]) -> Vec<String> {
-    copyContigousValues(tokenStream, &(tokenStream.len() as u32))
+pub fn copy_all_contigous_values(token_stream: &[Token]) -> Vec<String> {
+    copy_contigous_values(token_stream, &(token_stream.len() as u32))
 }
 
 #[cfg(test)]
