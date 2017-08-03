@@ -142,7 +142,8 @@ impl Arg {
                     new_token_stream_index += available_values;
                 }
             },
-            Range { min: min_count, max: max_count } if available_values >= min_count && available_values <= max_count => {
+            Range { min: min_count, max: max_count } if available_values >= min_count => {
+                println!("Range min {} max {}", min_count, max_count);
                 self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &max_count));
                 if available_values > max_count {
                     new_token_stream_index += max_count;
@@ -150,7 +151,11 @@ impl Arg {
                     new_token_stream_index += available_values;
                 }
             },
-            _ => (),
+            Range {..} => {
+                println!("Other range...");
+                return Err("To few arguments");
+            },
+            _ => return Err("Invalid value count specification"),
         }
 
         Ok(new_token_stream_index)
@@ -287,6 +292,82 @@ mod test {
             },
             _ => panic!("Matched no values"),
         }
+    }
+
+    #[test]
+    fn take_tokens_at_index__onindex_minmaxcount__less_avail_than_max__matches() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            String::from("val2"),
+            String::from("val3"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_min_max_values(1, 2);
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
+        check_resulting_index(2, resulting_index);
+        let matched_values = argument.matched_values;
+        match matched_values {
+            Some(ref matched_values) if matched_values.len() == 2 => {
+                assert_eq!(&matched_values[0], "val1");
+                assert_eq!(&matched_values[1], "val2");
+            },
+            _ => panic!("Matched no values"),
+        }
+    }
+
+    #[test]
+    fn take_tokens_at_index__onindex_minmaxcount__more_avail_than_max__matches() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"),
+            String::from("val2"),
+            String::from("val3"),
+            String::from("val4"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_min_max_values(1, 3);
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
+        check_resulting_index(3, resulting_index);
+        let matched_values = argument.matched_values;
+        match matched_values {
+            Some(ref matched_values) if matched_values.len() == 3 => {
+                assert_eq!(&matched_values[0], "val1");
+                assert_eq!(&matched_values[1], "val2");
+                assert_eq!(&matched_values[2], "val3");
+            },
+            _ => panic!("Matched no values"),
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn take_tokens_at_index__onindex_minmaxcount___to_few_avail___panics() {
+        use super::Arg;
+        use super::super::tokens;
+
+        let argument_list = vec!(
+            String::from("val1"));
+        let token_stream = tokens::tokenize(&argument_list);
+
+        let mut argument = Arg::new()
+                        .with_name("Index 0")
+                        .with_help("Index 0")
+                        .on_index(0)
+                        .takes_min_max_values(2, 3);
+        argument.take_tokens_at_index(&token_stream, &0).unwrap();
     }
 
     #[test]
