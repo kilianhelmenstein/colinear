@@ -1,5 +1,5 @@
 # colinear
-**co**mmand **line** **ar**gument parser. For me to learn rust and inspired by cla-rs.
+**co**mmand **line** **ar**gument parser. For me to learn rust. inspired by clap-rs.
 
 ## Todos
 - Refactoring
