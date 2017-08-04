@@ -1,5 +1,5 @@
 # colinear
-COmmand LINE ARgument parser. For me to learn rust and inspired by cla-rs.
+**co**mmand **line** **ar**gument parser. For me to learn rust and inspired by cla-rs.
 
 ## Todos
 - Refactoring
