@@ -1,5 +1,3 @@
-use utils;
-
 pub enum Token {
     Value(String),
     ShortName(String),
@@ -8,6 +6,8 @@ pub enum Token {
 
 impl Token {
     pub fn new(content: &str) -> Token {
+        use utils;
+
         let content_string = String::from(content);
 
         if utils::index_in_string_equals_to(&0, content, &'-') {
