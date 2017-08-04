@@ -44,10 +44,6 @@ impl IndexPair {
     fn with_phys(physical_index: u32) -> IndexPair {
         IndexPair { physical_index: physical_index, logical_index: 0 }
     }
-
-    pub fn tokens_left(&self, token_stream: &[tokens::Token]) -> bool {
-        self.physical_index < token_stream.len() as u32
-    }
 }
 
 pub struct ArgBuilder {
