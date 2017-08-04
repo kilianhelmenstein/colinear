@@ -117,7 +117,6 @@ mod test {
     #[test]
     fn tokenize_combinedoptions_validresult() {
         use super::super::*;
-        use super::*;
 
         let argument_list = vec!(
             String::from("-abc"));
@@ -136,7 +135,6 @@ mod test {
             Token::ShortName(ref name) => panic!("Expected {}, got {}", expected, name),
             Token::LongName(_) => panic!("Expected ShortName, got LongName"),
             Token::Value(_) => panic!("Expected ShortName, got Value"),
-            _ => panic!("Invalid token"),
         }
     }
 }

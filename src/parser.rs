@@ -34,8 +34,8 @@ impl Parser {
         self
     }
 
-    pub fn with_arg(mut self, argument: Arg) -> Parser {
-        self.configured_args.push(argument);
+    pub fn with_arg(mut self, argument_builder: ArgBuilder) -> Parser {
+        self.configured_args.push(argument_builder.build());
         self
     }
 
@@ -117,18 +117,15 @@ mod test {
         let mut parser = Parser::new()
                         .app("Colinear")
                         .with_author("Kilian Helmenstein", "kilian.helmenstein@gmail.com")
-                        .with_arg(args::Arg::new()
-                                    .with_name("Pos 1")
+                        .with_arg(args::Arg::with_name("Pos 1")
                                     .with_help("Pos 1")
                                     .on_index(0)
                                     .takes_one_value())
-                        .with_arg(args::Arg::new()
-                                    .with_name("Option 1")
+                        .with_arg(args::Arg::with_name("Option 1")
                                     .with_help("Opt 1")
                                     .as_option("-o", "--option")
                                     .takes_one_value())
-                        .with_arg(args::Arg::new()
-                                    .with_name("Option 2")
+                        .with_arg(args::Arg::with_name("Option 2")
                                     .with_help("Opt 2")
                                     .as_option("-p", "--option2")
                                     .takes_one_value());

@@ -24,67 +24,84 @@ enum Count {
     Range { min: u32, max: u32 }
 }
 
-impl Arg {
-    pub fn new() -> Arg {
-        Arg {
-            meta: Meta { name: "", help: "" },
-            kind_of: Type::OnIndex{ index: 0 },
-            required_values_specification: Count::Fixed(0),
-            matched_values: None
+pub struct ArgBuilder {
+    built_arg: Arg
+}
+
+impl ArgBuilder {
+    fn new() -> ArgBuilder {
+        ArgBuilder {
+            built_arg: Arg {
+                meta: Meta { name: "", help: "" },
+                kind_of: Type::OnIndex{ index: 0 },
+                required_values_specification: Count::Fixed(0),
+                matched_values: None
+            }
         }
+    }
+
+    pub fn build(self) -> Arg {
+        self.built_arg
+    }
+
+    pub fn with_name(mut self, name: &'static str) -> ArgBuilder {
+        self.built_arg.meta.name = name;
+        self
+    }
+
+    pub fn with_help(mut self, help: &'static str) -> ArgBuilder {
+        self.built_arg.meta.help = help;
+        self
+    }
+
+    pub fn on_index(mut self, index: u32) -> ArgBuilder {
+        self.built_arg.kind_of = Type::OnIndex { index: index };
+        self
+    }
+
+    pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> ArgBuilder {
+        self.built_arg.kind_of = Type::AsOption { short_name: short_name, long_name: long_name };
+        self
+    }
+
+    pub fn takes_one_value(mut self) -> ArgBuilder {
+        self.built_arg.required_values_specification = Count::Fixed(1);
+        self
+    }
+
+    pub fn takes_n_values(mut self, n: u32) -> ArgBuilder {
+        self.built_arg.required_values_specification = Count::Fixed(n);
+        self
+    }
+
+    pub fn takes_min_values(mut self, min: u32) -> ArgBuilder {
+        self.built_arg.required_values_specification = Count::Minimum(min);
+        self
+    }
+
+    pub fn takes_max_values(mut self, max: u32) -> ArgBuilder {
+        self.built_arg.required_values_specification = Count::Maximum(max);
+        self
+    }
+
+    pub fn takes_min_max_values(mut self, min: u32, max: u32) -> ArgBuilder {
+        self.built_arg.required_values_specification = Count::Range { min: min, max: max };
+        self
+    }
+}
+
+impl Arg {
+    pub fn with_name(name: &'static str) -> ArgBuilder {
+        let builder = ArgBuilder::new();
+        builder.with_name(name)
     }
 
     pub fn name(&self) -> String {
         String::from(self.meta.name)
     }
 
-    pub fn with_name(mut self, name: &'static str) -> Arg {
-        self.meta.name = name;
-        self
-    }
-
     pub fn help(&self) -> String {
         String::from(self.meta.help)
-    }
-
-    pub fn with_help(mut self, help: &'static str) -> Arg {
-        self.meta.help = help;
-        self
-    }
-
-    pub fn on_index(mut self, index: u32) -> Arg {
-        self.kind_of = Type::OnIndex { index: index };
-        self
-    }
-
-    pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> Arg {
-        self.kind_of = Type::AsOption { short_name: short_name, long_name: long_name };
-        self
-    }
-
-    pub fn takes_one_value(mut self) -> Arg {
-        self.required_values_specification = Count::Fixed(1);
-        self
-    }
-
-    pub fn takes_n_values(mut self, n: u32) -> Arg {
-        self.required_values_specification = Count::Fixed(n);
-        self
-    }
-
-    pub fn takes_min_values(mut self, min: u32) -> Arg {
-        self.required_values_specification = Count::Minimum(min);
-        self
-    }
-
-    pub fn takes_max_values(mut self, max: u32) -> Arg {
-        self.required_values_specification = Count::Maximum(max);
-        self
-    }
-
-    pub fn takes_min_max_values(mut self, min: u32, max: u32) -> Arg {
-        self.required_values_specification = Count::Range { min: min, max: max };
-        self
     }
 
     pub fn take_tokens_at_index(&mut self, token_stream: &[Token], token_stream_index: &u32) -> Result<u32, &'static str> {
@@ -179,7 +196,7 @@ mod test {
                     panic!("Matched invalid value: {}")
                 }
             },
-            Some(ref matched_values) => panic!("Matched, but match count is zero"),
+            Some(_) => panic!("Matched, but match count is zero"),
             _ => panic!("Matched no value"),
         }
     }
@@ -200,16 +217,16 @@ mod test {
             String::from("val2"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument_1st = Arg::new()
-                        .with_name("Index 0")
+        let mut argument_1st = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_one_value();
-        let mut argument_2nd = Arg::new()
-                        .with_name("Index 1")
+                        .takes_one_value()
+                        .build();
+        let mut argument_2nd = Arg::with_name("Index 1")
                         .with_help("Index 1")
                         .on_index(1)
-                        .takes_one_value();
+                        .takes_one_value()
+                        .build();
         let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(1, resulting_index_1st);
         check_match_result(&argument_1st, "val1");
@@ -230,11 +247,11 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_min_values(2);
+                        .takes_min_values(2)
+                        .build();
         let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(3, resulting_index);
         let matched_values = argument.matched_values;
@@ -258,11 +275,11 @@ mod test {
             String::from("val1"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_min_values(2);
+                        .takes_min_values(2)
+                        .build();
         argument.take_tokens_at_index(&token_stream, &0).unwrap();
     }
 
@@ -277,11 +294,11 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_max_values(2);
+                        .takes_max_values(2)
+                        .build();
         let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(2, resulting_index);
         let matched_values = argument.matched_values;
@@ -305,11 +322,11 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_min_max_values(1, 2);
+                        .takes_min_max_values(1, 2)
+                        .build();
         let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(2, resulting_index);
         let matched_values = argument.matched_values;
@@ -334,11 +351,11 @@ mod test {
             String::from("val4"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_min_max_values(1, 3);
+                        .takes_min_max_values(1, 3)
+                        .build();
         let resulting_index = argument.take_tokens_at_index(&token_stream, &0).unwrap();
         check_resulting_index(3, resulting_index);
         let matched_values = argument.matched_values;
@@ -362,11 +379,11 @@ mod test {
             String::from("val1"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::new()
-                        .with_name("Index 0")
+        let mut argument = Arg::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
-                        .takes_min_max_values(2, 3);
+                        .takes_min_max_values(2, 3)
+                        .build();
         argument.take_tokens_at_index(&token_stream, &0).unwrap();
     }
 
@@ -385,16 +402,16 @@ mod test {
 
         let token_stream = tokens::tokenize(&arg_list);
 
-        let mut argument_1st_option = Arg::new()
-                        .with_name("Opt 1")
+        let mut argument_1st_option = Arg::with_name("Opt 1")
                         .with_help("Opt 1")
                         .as_option("-o", "--option")
-                        .takes_one_value();
-        let mut argument_2nd_option = Arg::new()
-                        .with_name("Opt 2")
+                        .takes_one_value()
+                        .build();
+        let mut argument_2nd_option = Arg::with_name("Opt 2")
                         .with_help("Opt 2")
                         .as_option("-p", "--option2")
-                        .takes_one_value();
+                        .takes_one_value()
+                        .build();
 
         let resulting_index = argument_1st_option.take_tokens_at_index(&token_stream, &2).unwrap();
         check_resulting_index(4, resulting_index);
