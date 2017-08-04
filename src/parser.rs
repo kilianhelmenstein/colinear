@@ -1,5 +1,5 @@
-use super::args::*;
-use super::tokens;
+use args::*;
+use tokens;
 
 use std::env;
 
