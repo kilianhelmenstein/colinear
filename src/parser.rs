@@ -69,17 +69,7 @@ impl Parser {
         let mut stream_index = IndexPair { physical_index: 0, logical_index: 0 };
 
         while stream_index.physical_index < token_stream.len() as u32 {
-            let mut resulting_stream_index = stream_index.clone();
-
-            for arg in &mut self.configured_args {
-                match arg.take_tokens_at_index(token_stream, &stream_index) {
-                    Ok(resulting_index) => resulting_stream_index = resulting_index,
-                    Err(message) => panic!("{}", message),
-                }
-                if resulting_stream_index.physical_index > stream_index.physical_index {
-                    break;
-                }
-            }
+            let resulting_stream_index = self.try_all_arguments_for_match(&token_stream, &stream_index);
 
             let no_argument_matched = resulting_stream_index.physical_index == stream_index.physical_index;
             if no_argument_matched {
@@ -88,6 +78,23 @@ impl Parser {
                 stream_index = resulting_stream_index;
             }
         }
+    }
+
+    fn try_all_arguments_for_match(&mut self, token_stream: &[tokens::Token], stream_index: &IndexPair) -> IndexPair {
+        let mut resulting_stream_index = stream_index.clone();
+
+        for arg in &mut self.configured_args {
+            match arg.take_tokens_at_index(token_stream, stream_index) {
+                Ok(resulting_index) => resulting_stream_index = resulting_index,
+                Err(message) => panic!("{}", message),
+            }
+
+            let some_argument_matched = resulting_stream_index.physical_index > stream_index.physical_index;
+            if some_argument_matched {
+                break;
+            }
+        }
+        resulting_stream_index
     }
 
     pub fn parse(&mut self) {
