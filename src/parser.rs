@@ -66,10 +66,10 @@ impl Parser {
     }
 
     pub fn parse_token_stream(&mut self, token_stream: &[tokens::Token]) {
-        let mut stream_index = IndexPair { physical_index: 0, logical_index: 0 };
+        let mut stream_index = IndexPair::zero_indeces();
 
-        while stream_index.physical_index < token_stream.len() as u32 {
-            let resulting_stream_index = self.try_all_arguments_for_match(&token_stream, &stream_index);
+        while stream_index.tokens_left(token_stream) {
+            let resulting_stream_index = self.try_all_arguments_for_match(token_stream, &stream_index);
 
             let no_argument_matched = resulting_stream_index.physical_index == stream_index.physical_index;
             if no_argument_matched {

@@ -1,3 +1,4 @@
+use tokens;
 use tokens::*;
 
 pub struct Arg {
@@ -36,8 +37,16 @@ impl Clone for IndexPair {
 }
 
 impl IndexPair {
+    pub fn zero_indeces() -> IndexPair {
+        IndexPair { physical_index: 0, logical_index: 0 }
+    }
+
     fn with_phys(physical_index: u32) -> IndexPair {
         IndexPair { physical_index: physical_index, logical_index: 0 }
+    }
+
+    pub fn tokens_left(&self, token_stream: &[tokens::Token]) -> bool {
+        self.physical_index < token_stream.len() as u32
     }
 }
 
