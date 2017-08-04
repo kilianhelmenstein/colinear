@@ -66,24 +66,24 @@ impl Parser {
     }
 
     pub fn parse_token_stream(&mut self, token_stream: &[tokens::Token]) {
-        let mut stream_index: u32 = 0;
+        let mut stream_index = IndexPair { physical_index: 0, logical_index: 0 };
 
-        while stream_index < token_stream.len() as u32 {
-            let mut resulting_stream_index = stream_index;
+        while stream_index.physical_index < token_stream.len() as u32 {
+            let mut resulting_stream_index = stream_index.clone();
 
             for arg in &mut self.configured_args {
                 match arg.take_tokens_at_index(token_stream, &stream_index) {
                     Ok(resulting_index) => resulting_stream_index = resulting_index,
                     Err(message) => panic!("{}", message),
                 }
-                if resulting_stream_index > stream_index {
+                if resulting_stream_index.physical_index > stream_index.physical_index {
                     break;
                 }
             }
 
-            let no_argument_matched = resulting_stream_index == stream_index;
+            let no_argument_matched = resulting_stream_index.physical_index == stream_index.physical_index;
             if no_argument_matched {
-                panic!("No match for argument token at index {}", stream_index);
+                panic!("No match for argument token at index {}", stream_index.physical_index);
             } else {
                 stream_index = resulting_stream_index;
             }
@@ -91,8 +91,8 @@ impl Parser {
     }
 
     pub fn parse(&mut self) {
-        let cl_arguments: Vec<String> = env::args().collect();
-        let token_stream = tokens::tokenize(&cl_arguments);
+        let command_line_arguments: Vec<String> = env::args().collect();
+        let token_stream = tokens::tokenize(&command_line_arguments);
         self.parse_token_stream(&token_stream[1..]);
     }
 }
