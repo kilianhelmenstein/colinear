@@ -138,8 +138,8 @@ impl Arg {
             let stream_is_on_right_position = token_stream_index.logical_index == configured_position;
             if stream_is_on_right_position {
                 let mut new_index = token_stream_index.clone();
-
                 new_index.physical_index = self.extract_values(&token_stream_index.physical_index, token_stream)?;
+
                 let took_tokens = new_index.physical_index > token_stream_index.physical_index;
                 if took_tokens {
                     new_index.logical_index += 1;
