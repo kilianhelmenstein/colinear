@@ -71,9 +71,9 @@ impl Parser {
         while tokens_left(token_stream, &stream_index) {
             let resulting_stream_index = self.try_all_arguments_for_match(token_stream, &stream_index);
 
-            let no_argument_matched = resulting_stream_index.physical_index == stream_index.physical_index;
+            let no_argument_matched = resulting_stream_index.physical == stream_index.physical;
             if no_argument_matched {
-                panic!("No match for argument token at index {}", stream_index.physical_index);
+                panic!("No match for argument token at index {}", stream_index.physical);
             } else {
                 stream_index = resulting_stream_index;
             }
@@ -89,7 +89,7 @@ impl Parser {
                 Err(message) => panic!("{}", message),
             }
 
-            let some_argument_matched = resulting_stream_index.physical_index > stream_index.physical_index;
+            let some_argument_matched = resulting_stream_index.physical > stream_index.physical;
             if some_argument_matched {
                 break;
             }
@@ -106,7 +106,7 @@ impl Parser {
 
 
 fn tokens_left(token_stream: &[tokens::Token], token_index: &IndexPair) -> bool {
-    token_index.physical_index < token_stream.len() as u32
+    token_index.physical < token_stream.len() as u32
 }
 
 

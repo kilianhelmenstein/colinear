@@ -1,9 +1,12 @@
+mod processor;
+
 use tokens;
 use tokens::*;
+use self::processor::*;
 
 pub struct Arg {
     meta: Meta,
-    kind_of: Type,
+    token_processor: Box<Processor>,
     required_values_specification: Count,
     pub matched_values: Option<Vec<String>>
 }
@@ -18,31 +21,24 @@ enum Type {
     AsOption { short_name: &'static str, long_name: &'static str }
 }
 
-enum Count {
-    Fixed(u32),
-    Minimum(u32),
-    Maximum(u32),
-    Range { min: u32, max: u32 }
-}
-
 pub struct IndexPair {
-    pub physical_index: u32,
-    pub logical_index: u32
+    pub physical: u32,
+    pub logical: u32
 }
 
 impl Clone for IndexPair {
     fn clone(&self) -> Self {
-        IndexPair { physical_index: self.physical_index, logical_index: self.physical_index }
+        IndexPair { physical: self.physical, logical: self.physical }
     }
 }
 
 impl IndexPair {
     pub fn zero_indeces() -> IndexPair {
-        IndexPair { physical_index: 0, logical_index: 0 }
+        IndexPair { physical: 0, logical: 0 }
     }
 
-    fn with_phys(physical_index: u32) -> IndexPair {
-        IndexPair { physical_index: physical_index, logical_index: 0 }
+    fn with_phys(physical: u32) -> IndexPair {
+        IndexPair { physical: physical, logical: 0 }
     }
 }
 
@@ -55,7 +51,7 @@ impl ArgBuilder {
         ArgBuilder {
             built_arg: Arg {
                 meta: Meta { name: "", help: "" },
-                kind_of: Type::OnIndex{ index: 0 },
+                token_processor: Box::new(OptionProcessor::new("", "")),
                 required_values_specification: Count::Fixed(0),
                 matched_values: None
             }
@@ -77,12 +73,12 @@ impl ArgBuilder {
     }
 
     pub fn on_index(mut self, index: u32) -> ArgBuilder {
-        self.built_arg.kind_of = Type::OnIndex { index: index };
+        self.built_arg.token_processor = Box::new(PositionalProcessor::new(index));
         self
     }
 
     pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> ArgBuilder {
-        self.built_arg.kind_of = Type::AsOption { short_name: short_name, long_name: long_name };
+        self.built_arg.token_processor = Box::new(OptionProcessor::new(short_name, long_name));
         self
     }
 
@@ -127,93 +123,13 @@ impl Arg {
     }
 
     pub fn take_tokens_at_index(&mut self, token_stream: &[Token], token_stream_index: &IndexPair) -> Result<IndexPair, &'static str> {
-        match self.kind_of {
-            Type::OnIndex{..} => return self.match_positional_arg(token_stream_index, token_stream),
-            Type::AsOption{..} => return self.match_optional_arg(token_stream_index, token_stream),
+        match self.token_processor.process_tokens_from_index(token_stream, token_stream_index, &self.required_values_specification) {
+            Ok((matched_values, resulting_index)) => {
+                self.matched_values = Some(matched_values);
+                return Ok(resulting_index);
+            },
+            Err(message) => Err(message)
         }
-    }
-
-    fn match_positional_arg(&mut self, token_stream_index: &IndexPair, token_stream: &[Token]) -> Result<IndexPair, &'static str> {
-        if let Type::OnIndex{ index: configured_position } = self.kind_of {
-            let stream_is_on_right_position = token_stream_index.logical_index == configured_position;
-            if stream_is_on_right_position {
-                let mut new_index = token_stream_index.clone();
-                new_index.physical_index = self.extract_values(&token_stream_index.physical_index, token_stream)?;
-
-                let took_tokens = new_index.physical_index > token_stream_index.physical_index;
-                if took_tokens {
-                    new_index.logical_index += 1;
-                    return Ok(new_index);
-                }
-            }
-        }
-
-        Ok(token_stream_index.clone())
-    }
-
-    fn match_optional_arg(&mut self, token_stream_index: &IndexPair, token_stream: &[Token]) -> Result<IndexPair, &'static str> {
-        let mut resulting_index = token_stream_index.clone();
-
-        if let Type::AsOption{ short_name: defined_short_name, long_name: defined_long_name} = self.kind_of {
-            let values_begin_index = token_stream_index.physical_index + 1;
-
-            resulting_index.physical_index = match token_stream[token_stream_index.physical_index as usize] {
-                Token::ShortName(ref name) if name == defined_short_name => {
-                    self.extract_values(&values_begin_index, &token_stream)?
-                },
-                Token::LongName(ref name) if name == defined_long_name => {
-                    self.extract_values(&values_begin_index, &token_stream)?
-                },
-                _ => token_stream_index.physical_index,
-            };
-        }
-
-        Ok(resulting_index)
-    }
-
-    fn extract_values(&mut self, token_stream_index: &u32, token_stream: &[Token]) -> Result<u32, &'static str> {
-        use self::Count::*;
-
-        let token_stream_index = *token_stream_index as usize;
-        let mut new_token_stream_index = token_stream_index.clone() as u32;
-
-        let available_values = count_available_contigous_values(&token_stream[token_stream_index..]);
-        println!("avail. values: {}", available_values);
-        match self.required_values_specification {
-            Fixed(fixed_count) if available_values >= fixed_count => {
-                self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &fixed_count));
-                new_token_stream_index += fixed_count;
-            },
-            Minimum(min_count) if available_values >= min_count => {
-                self.matched_values = Some(copy_all_contigous_values(&token_stream[token_stream_index..]));
-                new_token_stream_index += available_values;
-            },
-            Minimum(_) => return Err("To few arguments"),
-            Maximum(max_count) => {
-                self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &max_count));
-                if available_values > max_count {
-                    new_token_stream_index += max_count;
-                } else {
-                    new_token_stream_index += available_values;
-                }
-            },
-            Range { min: min_count, max: max_count } if available_values >= min_count => {
-                println!("Range min {} max {}", min_count, max_count);
-                self.matched_values = Some(copy_contigous_values(&token_stream[token_stream_index..], &max_count));
-                if available_values > max_count {
-                    new_token_stream_index += max_count;
-                } else {
-                    new_token_stream_index += available_values;
-                }
-            },
-            Range {..} => {
-                println!("Other range...");
-                return Err("To few arguments");
-            },
-            _ => return Err("Invalid value count specification"),
-        }
-
-        Ok(new_token_stream_index)
     }
 }
 
@@ -266,12 +182,12 @@ mod test {
                         .on_index(1)
                         .takes_one_value()
                         .build();
-        let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        let resulting_index_1st = argument_1st.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
         check_resulting_index(1, resulting_index_1st);
         check_match_result(&argument_1st, "val1");
 
         let resulting_index_2nd = argument_2nd
-            .take_tokens_at_index(&token_stream, &IndexPair { physical_index: 1, logical_index: 1 }).unwrap().physical_index;
+            .take_tokens_at_index(&token_stream, &IndexPair { physical: 1, logical: 1 }).unwrap().physical;
         check_resulting_index(2, resulting_index_2nd);
         check_match_result(&argument_2nd, "val2");
     }
@@ -292,7 +208,7 @@ mod test {
                         .on_index(0)
                         .takes_min_values(2)
                         .build();
-        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
         check_resulting_index(3, resulting_index);
         let matched_values = argument.matched_values;
         match matched_values {
@@ -320,7 +236,7 @@ mod test {
                         .on_index(0)
                         .takes_min_values(2)
                         .build();
-        argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
     }
 
     #[test]
@@ -339,7 +255,7 @@ mod test {
                         .on_index(0)
                         .takes_max_values(2)
                         .build();
-        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
         check_resulting_index(2, resulting_index);
         let matched_values = argument.matched_values;
         match matched_values {
@@ -367,7 +283,7 @@ mod test {
                         .on_index(0)
                         .takes_min_max_values(1, 2)
                         .build();
-        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
         check_resulting_index(2, resulting_index);
         let matched_values = argument.matched_values;
         match matched_values {
@@ -396,7 +312,7 @@ mod test {
                         .on_index(0)
                         .takes_min_max_values(1, 3)
                         .build();
-        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        let resulting_index = argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
         check_resulting_index(3, resulting_index);
         let matched_values = argument.matched_values;
         match matched_values {
@@ -424,7 +340,7 @@ mod test {
                         .on_index(0)
                         .takes_min_max_values(2, 3)
                         .build();
-        argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical_index;
+        argument.take_tokens_at_index(&token_stream, &IndexPair::with_phys(0)).unwrap().physical;
     }
 
     #[test]
@@ -455,13 +371,13 @@ mod test {
 
         let resulting_index = argument_1st_option
             .take_tokens_at_index(&token_stream, &IndexPair::with_phys(2))
-            .unwrap().physical_index;
+            .unwrap().physical;
         check_resulting_index(4, resulting_index);
         check_match_result(&argument_1st_option, "optval1");
 
         let resulting_index = argument_2nd_option
             .take_tokens_at_index(&token_stream, &IndexPair::with_phys(4))
-            .unwrap().physical_index;
+            .unwrap().physical;
         check_resulting_index(6, resulting_index);
         check_match_result(&argument_2nd_option, "optval2");
     }
