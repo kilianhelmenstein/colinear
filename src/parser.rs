@@ -5,7 +5,7 @@ use std::env;
 
 pub struct Parser {
     meta: AppMeta,
-    configured_args: Vec<Arg>
+    configured_args: Vec<ArgConfig>
 }
 
 struct AppMeta {
@@ -13,7 +13,6 @@ struct AppMeta {
     author_name: &'static str,
     author_email: &'static str
 }
-
 
 impl Parser {
     pub fn new() -> Parser {
@@ -34,7 +33,7 @@ impl Parser {
         self
     }
 
-    pub fn with_arg(mut self, argument_builder: ArgBuilder) -> Parser {
+    pub fn with_arg(mut self, argument_builder: ArgConfigBuilder) -> Parser {
         self.configured_args.push(argument_builder.build());
         self
     }
@@ -104,7 +103,6 @@ impl Parser {
     }
 }
 
-
 fn tokens_left(token_stream: &[tokens::Token], token_index: &IndexPair) -> bool {
     token_index.physical < token_stream.len() as u32
 }
@@ -130,15 +128,15 @@ mod test {
         let mut parser = Parser::new()
                         .app("Colinear")
                         .with_author("Kilian Helmenstein", "kilian.helmenstein@gmail.com")
-                        .with_arg(args::Arg::with_name("Pos 1")
+                        .with_arg(args::ArgConfig::with_name("Pos 1")
                                     .with_help("Pos 1")
                                     .on_index(0)
                                     .takes_one_value())
-                        .with_arg(args::Arg::with_name("Option 1")
+                        .with_arg(args::ArgConfig::with_name("Option 1")
                                     .with_help("Opt 1")
                                     .as_option("-o", "--option")
                                     .takes_one_value())
-                        .with_arg(args::Arg::with_name("Option 2")
+                        .with_arg(args::ArgConfig::with_name("Option 2")
                                     .with_help("Opt 2")
                                     .as_option("-p", "--option2")
                                     .takes_one_value());

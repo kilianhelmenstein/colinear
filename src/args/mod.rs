@@ -4,11 +4,11 @@ use tokens;
 use tokens::*;
 use self::processor::*;
 
-pub struct Arg {
+pub struct ArgConfig {
     meta: Meta,
     token_processor: Box<Processor>,
     required_values_specification: Count,
-    pub matched_values: Option<Vec<String>>
+
 }
 
 pub struct Meta {
@@ -42,14 +42,14 @@ impl IndexPair {
     }
 }
 
-pub struct ArgBuilder {
-    built_arg: Arg
+pub struct ArgConfigBuilder {
+    built_arg: ArgConfig
 }
 
-impl ArgBuilder {
-    fn new() -> ArgBuilder {
-        ArgBuilder {
-            built_arg: Arg {
+impl ArgConfigBuilder {
+    fn new() -> ArgConfigBuilder {
+        ArgConfigBuilder {
+            built_arg: ArgConfig {
                 meta: Meta { name: "", help: "" },
                 token_processor: Box::new(OptionProcessor::new("", "")),
                 required_values_specification: Count::Fixed(0),
@@ -58,59 +58,59 @@ impl ArgBuilder {
         }
     }
 
-    pub fn build(self) -> Arg {
+    pub fn build(self) -> ArgConfig {
         self.built_arg
     }
 
-    pub fn with_name(mut self, name: &'static str) -> ArgBuilder {
+    pub fn with_name(mut self, name: &'static str) -> ArgConfigBuilder {
         self.built_arg.meta.name = name;
         self
     }
 
-    pub fn with_help(mut self, help: &'static str) -> ArgBuilder {
+    pub fn with_help(mut self, help: &'static str) -> ArgConfigBuilder {
         self.built_arg.meta.help = help;
         self
     }
 
-    pub fn on_index(mut self, index: u32) -> ArgBuilder {
+    pub fn on_index(mut self, index: u32) -> ArgConfigBuilder {
         self.built_arg.token_processor = Box::new(PositionalProcessor::new(index));
         self
     }
 
-    pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> ArgBuilder {
+    pub fn as_option(mut self, short_name: &'static str, long_name: &'static str) -> ArgConfigBuilder {
         self.built_arg.token_processor = Box::new(OptionProcessor::new(short_name, long_name));
         self
     }
 
-    pub fn takes_one_value(mut self) -> ArgBuilder {
+    pub fn takes_one_value(mut self) -> ArgConfigBuilder {
         self.built_arg.required_values_specification = Count::Fixed(1);
         self
     }
 
-    pub fn takes_n_values(mut self, n: u32) -> ArgBuilder {
+    pub fn takes_n_values(mut self, n: u32) -> ArgConfigBuilder {
         self.built_arg.required_values_specification = Count::Fixed(n);
         self
     }
 
-    pub fn takes_min_values(mut self, min: u32) -> ArgBuilder {
+    pub fn takes_min_values(mut self, min: u32) -> ArgConfigBuilder {
         self.built_arg.required_values_specification = Count::Minimum(min);
         self
     }
 
-    pub fn takes_max_values(mut self, max: u32) -> ArgBuilder {
+    pub fn takes_max_values(mut self, max: u32) -> ArgConfigBuilder {
         self.built_arg.required_values_specification = Count::Maximum(max);
         self
     }
 
-    pub fn takes_min_max_values(mut self, min: u32, max: u32) -> ArgBuilder {
+    pub fn takes_min_max_values(mut self, min: u32, max: u32) -> ArgConfigBuilder {
         self.built_arg.required_values_specification = Count::Range { min: min, max: max };
         self
     }
 }
 
-impl Arg {
-    pub fn with_name(name: &'static str) -> ArgBuilder {
-        let builder = ArgBuilder::new();
+impl ArgConfig {
+    pub fn with_name(name: &'static str) -> ArgConfigBuilder {
+        let builder = ArgConfigBuilder::new();
         builder.with_name(name)
     }
 
@@ -133,12 +133,34 @@ impl Arg {
     }
 }
 
+pub struct ArgResult {
+    occurences: isize;
+    values: Vec<String>
+}
+
+impl ArgResult {
+    pub fn new() -> ArgResult {
+        ArgResult {
+            occurences: 0,
+            values: Vec::new()
+        }
+    }
+
+    pub fn merge(&self, other: &ArgResult) -> ArgResult {
+        ArgResult {
+            occurences: self.occurences + other.occurences,
+            values: self.values + other.values
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod test {
-    use super::Arg;
+    use super::ArgConfig;
     use super::IndexPair;
 
-    fn check_match_result(dut: &Arg, shall_matched_value: &str) {
+    fn check_match_result(dut: &ArgConfig, shall_matched_value: &str) {
         match dut.matched_values {
             Some(ref matched_values) if matched_values.len() > 0 => {
                 if let Some(matched_value) = matched_values.first() {
@@ -164,7 +186,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__onindex_fixedcount_is_1__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
@@ -172,12 +194,12 @@ mod test {
             String::from("val2"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument_1st = Arg::with_name("Index 0")
+        let mut argument_1st = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_one_value()
                         .build();
-        let mut argument_2nd = Arg::with_name("Index 1")
+        let mut argument_2nd = ArgConfig::with_name("Index 1")
                         .with_help("Index 1")
                         .on_index(1)
                         .takes_one_value()
@@ -194,7 +216,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__onindex_mincount__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
@@ -203,7 +225,7 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_min_values(2)
@@ -224,14 +246,14 @@ mod test {
     #[test]
     #[should_panic]
     fn take_tokens_at_index__onindex_mincount__panics() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
             String::from("val1"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_min_values(2)
@@ -241,7 +263,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__onindex_maxcount__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
@@ -250,7 +272,7 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_max_values(2)
@@ -269,7 +291,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__onindex_minmaxcount__less_avail_than_max__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
@@ -278,7 +300,7 @@ mod test {
             String::from("val3"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_min_max_values(1, 2)
@@ -297,7 +319,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__onindex_minmaxcount__more_avail_than_max__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
@@ -307,7 +329,7 @@ mod test {
             String::from("val4"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_min_max_values(1, 3)
@@ -328,14 +350,14 @@ mod test {
     #[test]
     #[should_panic]
     fn take_tokens_at_index__onindex_minmaxcount___to_few_avail___panics() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let argument_list = vec!(
             String::from("val1"));
         let token_stream = tokens::tokenize(&argument_list);
 
-        let mut argument = Arg::with_name("Index 0")
+        let mut argument = ArgConfig::with_name("Index 0")
                         .with_help("Index 0")
                         .on_index(0)
                         .takes_min_max_values(2, 3)
@@ -345,7 +367,7 @@ mod test {
 
     #[test]
     fn take_tokens_at_index__asoption__matches() {
-        use super::Arg;
+        use super::ArgConfig;
         use super::super::tokens;
 
         let arg_list = vec!(
@@ -358,12 +380,12 @@ mod test {
 
         let token_stream = tokens::tokenize(&arg_list);
 
-        let mut argument_1st_option = Arg::with_name("Opt 1")
+        let mut argument_1st_option = ArgConfig::with_name("Opt 1")
                         .with_help("Opt 1")
                         .as_option("-o", "--option")
                         .takes_one_value()
                         .build();
-        let mut argument_2nd_option = Arg::with_name("Opt 2")
+        let mut argument_2nd_option = ArgConfig::with_name("Opt 2")
                         .with_help("Opt 2")
                         .as_option("-p", "--option2")
                         .takes_one_value()
