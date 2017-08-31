@@ -1,9 +1,6 @@
-use tokens;
-use tokens::*;
+use tokens::Token;
 
-type InterpreteTokensFn<'a> = Fn(&'a [Token], &usize, &Count)
-                            -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str>;
-
+#[derive(Clone)]
 pub enum Count {
     Fixed(u32),
     Minimum(u32),
@@ -11,16 +8,15 @@ pub enum Count {
     Range { min: u32, max: u32 }
 }
 
-pub struct Arg {
-    definition: ArgDefinition,
+pub struct Arg<'a> {
+    definition: ArgDefinition<'a>,
     value: ArgValue
 }
 
-pub struct ArgDefinition {
-    pub name: &'static str,
-    pub help: &'static str,
+pub struct ArgDefinition<'a> {
     pub count: Count,
-    pub interprete_tokens: InterpreteTokensFn
+    pub interprete_tokens: &'a Fn(Vec<Token>, &usize, &Count)
+                                -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str>
 }
 
 pub struct ArgValue {
@@ -28,9 +24,10 @@ pub struct ArgValue {
     assigned_values: Vec<String>
 }
 
-impl ArgDefinition {
-    pub fn new(count: &Count, interprete_tokens: &InterpreteTokensFn) -> Self {
-        ArgDefinition { count: count, interprete_tokens: interprete_tokens }
+impl <'a> ArgDefinition <'a> {
+    pub fn new(count: &Count, interprete_tokens: &'a Fn(Vec<Token>, &usize, &Count)
+                                -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str>) -> Self {
+        ArgDefinition { count: count.clone(), interprete_tokens: interprete_tokens }
     }
 }
 
