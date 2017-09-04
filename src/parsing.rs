@@ -26,8 +26,9 @@ fn parse_next_argument<'a>(stream: Vec<Token>, args: &'a[Arg]) -> Result<(Vec<To
     Err("")
 }
 
-fn try_parse(stream: Vec<Token>, logical_index: &usize, arg_definition: &ArgDefinition)
-    -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str> {
+fn parse_next_argument_with_defintion<S>(stream: &S, logical_index: &usize, arg_definition: &ArgDefinition)
+    -> Result<(S, usize, Option<ArgValue>), &'static str>
+    where S: Iterator<Item=Token> {
     (arg_definition.interprete_tokens)(stream, logical_index, &arg_definition.count)
 }
 
@@ -39,17 +40,17 @@ mod test {
 
     fn interprete_tokens_increments_logical_index(stream: Vec<Token>, logical_index: &usize, count: &Count)
         -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str> {
-        let arg_value = ArgValue::new(1, vec!(stream[0].to_string()));
+        let arg_value = ArgValue::new(1, vec!(String::new()));
 
-        (stream[1..], logical_index+1, Some(arg_value));
+        Ok((stream[1..], logical_index+1, Some(arg_value)))
     }
 
     #[test]
-    fn try_parse() {
+    fn parse_next_argument_with_defintion() {
         let token_stream = tokens::tokenize(vec!["1", "2", "3", "4", "5"]);
         let arg = ArgDefinition::new(Count::Fixed(1), &interprete_tokens_increments_logical_index);
 
-        let (arg_value, logical_index) = try_parse().unwrap().unwrap();
+        let (arg_value, logical_index) = parse_next_argument_with_defintion(token_stream.into_iter(), 0, &arg).unwrap().unwrap();
 
     }
 }
