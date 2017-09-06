@@ -1,6 +1,6 @@
 use tokens::Token;
 
-type ProcessTokensFn<'a, S> = &'a Fn(S, &usize, &Count) -> Result<(S, usize, Option<ArgValue>), &'static str>;
+type ProcessTokensFn = Fn(&Iterator<Item=Token>, usize, Count) -> Result<(&Iterator<Item=Token>, usize, Option<ArgValue>), &'static str>;
 
 #[derive(Clone)]
 pub enum Count {
@@ -17,7 +17,7 @@ pub struct Arg<'a> {
 
 pub struct ArgDefinition<'a> {
     pub count: Count,
-    pub interprete_tokens: ProcessTokensFn<'a, &'a Iterator<Item=Token>>
+    pub interprete_tokens: &'a ProcessTokensFn
 }
 
 pub struct ArgValue {
@@ -26,7 +26,7 @@ pub struct ArgValue {
 }
 
 impl <'a> ArgDefinition <'a> {
-    pub fn new(count: &Count, interprete_tokens: ProcessTokensFn<'a, &'a Iterator<Item=Token>>) -> Self {
+    pub fn new(count: &Count, interprete_tokens: &'a ProcessTokensFn) -> Self {
         ArgDefinition { count: count.clone(), interprete_tokens: interprete_tokens }
     }
 }

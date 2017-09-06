@@ -5,7 +5,7 @@ use tokens::*;
 
 use std::env;
 
-fn parse_entire_stream(stream: Vec<Token>, args: Vec<Arg>) -> Result<Vec<Arg>, &'static str> {
+//fn parse_entire_stream(stream: Vec<Token>, args: Vec<Arg>) -> Result<Vec<Arg>, &'static str> {
     //let (stream_tail, resulting_args) = parse_next_argument(stream, args)?;
 
     //let tokens_pending = stream_tail.len() > 0;
@@ -14,20 +14,20 @@ fn parse_entire_stream(stream: Vec<Token>, args: Vec<Arg>) -> Result<Vec<Arg>, &
     //} else {
     //    resulting_args;
     //}
-    Err("")
-}
+    //Err("")
+//}
 
-fn parse_next_argument<'a>(stream: Vec<Token>, args: &'a[Arg]) -> Result<(Vec<Token>, Vec<Arg<'a>>), &'static str> {
+//fn parse_next_argument<'a>(stream: Vec<Token>, args: &'a[Arg]) -> Result<(Vec<Token>, Vec<Arg<'a>>), &'static str> {
     //if stream.is_empty() || args.is_empty() {
     //    return Err("Invalid input");
     //}
 
     //match process_token_stream
-    Err("")
-}
+    //Err("")
+//}
 
-fn parse_next_argument_with_defintion<S>(stream: &S, logical_index: &usize, arg_definition: &ArgDefinition)
-    -> Result<(S, usize, Option<ArgValue>), &'static str>
+fn parse_next_argument_with_defintion<'a, S=Iterator<Item=Token>>(stream: &S, logical_index: usize, arg_definition: ArgDefinition)
+    -> Result<(&S, usize, Option<ArgValue>), &'static str>
     where S: Iterator<Item=Token> {
     (arg_definition.interprete_tokens)(stream, logical_index, &arg_definition.count)
 }
@@ -38,11 +38,11 @@ mod test {
     use tokens::*;
     use args::*;
 
-    fn interprete_tokens_increments_logical_index(stream: Vec<Token>, logical_index: &usize, count: &Count)
+    fn interprete_tokens_increments_logical_index(stream: Iterator<Item=Token>, logical_index: &usize, count: &Count)
         -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str> {
         let arg_value = ArgValue::new(1, vec!(String::new()));
 
-        Ok((stream[1..], logical_index+1, Some(arg_value)))
+        Ok(stream, logical_index+1, Some(arg_value))
     }
 
     #[test]
