@@ -26,10 +26,9 @@ use std::env;
     //Err("")
 //}
 
-fn parse_next_argument_with_defintion<'a, S=Iterator<Item=Token>>(stream: &S, logical_index: usize, arg_definition: ArgDefinition)
-    -> Result<(&S, usize, Option<ArgValue>), &'static str>
-    where S: Iterator<Item=Token> {
-    (arg_definition.interprete_tokens)(stream, logical_index, &arg_definition.count)
+fn parse_next_argument_with_defintion<'a>(stream: &'a Iterator<Item=Token>, logical_index: usize, arg_definition: ArgDefinition)
+    -> Result<(&'a Iterator<Item=Token>, usize, Option<ArgValue>), &'static str> {
+    (arg_definition.interprete_tokens)(stream, logical_index, arg_definition.count)
 }
 
 #[cfg(test)]
@@ -38,19 +37,25 @@ mod test {
     use tokens::*;
     use args::*;
 
-    fn interprete_tokens_increments_logical_index(stream: Iterator<Item=Token>, logical_index: &usize, count: &Count)
-        -> Result<(Vec<Token>, usize, Option<ArgValue>), &'static str> {
+    fn interprete_tokens_increments_logical_index(stream: &Iterator<Item=Token>, logical_index: usize, count: Count, test: usize)
+        -> Result<(&Iterator<Item=Token>, usize, Option<ArgValue>), &'static str> {
         let arg_value = ArgValue::new(1, vec!(String::new()));
-
-        Ok(stream, logical_index+1, Some(arg_value))
+        println!("Wurde aufgerufen mit {}", test);
+        Ok((stream, logical_index+1, Some(arg_value)))
     }
 
     #[test]
     fn parse_next_argument_with_defintion() {
-        let token_stream = tokens::tokenize(vec!["1", "2", "3", "4", "5"]);
-        let arg = ArgDefinition::new(Count::Fixed(1), &interprete_tokens_increments_logical_index);
+        let argument_string = vec![String::from("1"), String::from("2"), String::from("3"), String::from("4"), String::from("5")];
+        let token_stream = tokens::tokenize(&argument_string);
 
-        let (arg_value, logical_index) = parse_next_argument_with_defintion(token_stream.into_iter(), 0, &arg).unwrap().unwrap();
+        let intepreter =
+            |stream: &Iterator<Item=Token>, logical_index: usize, count: Count|
+            -> Result<(&Iterator<Item=Token>, usize, Option<ArgValue>), &'static str>
+            { return interprete_tokens_increments_logical_index(stream, logical_index, count, 42) };
+        let arg = ArgDefinition::new(Count::Fixed(1), &intepreter);
 
+        super::parse_next_argument_with_defintion(&token_stream.into_iter(), 0, arg);
+        panic!("asdf");
     }
 }
