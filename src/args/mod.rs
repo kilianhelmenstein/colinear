@@ -15,7 +15,8 @@ pub struct Arg {
 
 pub struct ArgDefinition {
     pub count: Count,
-    pub interprete_tokens: Box<Fn(Box<Iterator<Item=Token>>, usize, Count) -> (Box<Iterator<Item=Token>>, usize, Option<ArgValue>)>
+    pub interprete_tokens: Box<Fn(Box<Iterator<Item=Token>>, usize, &Count)
+        -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str>>
 }
 
 pub struct ArgValue {
@@ -24,7 +25,10 @@ pub struct ArgValue {
 }
 
 impl ArgDefinition {
-    pub fn new(count: Count, interpreter: Box<Fn(Box<Iterator<Item=Token>>, usize, Count) -> (Box<Iterator<Item=Token>>, usize, Option<ArgValue>)>) -> ArgDefinition {
+    pub fn new(
+        count: Count,
+        interpreter: Box<Fn(Box<Iterator<Item=Token>>, usize, &Count)
+            -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str>>) -> ArgDefinition {
         ArgDefinition { count: count, interprete_tokens: interpreter }
     }
 
