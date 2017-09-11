@@ -8,14 +8,14 @@ pub enum Count {
     Range { min: u32, max: u32 }
 }
 
-pub struct Arg<'a> {
-    definition: ArgDefinition<'a>,
+pub struct Arg {
+    definition: ArgDefinition,
     value: ArgValue
 }
 
-pub struct ArgDefinition<'a> {
+pub struct ArgDefinition {
     pub count: Count,
-    pub interprete_tokens: &'a for<'c> Fn(&'c Iterator<Item=Token>, usize, Count) -> Result<(&'c Iterator<Item=Token>, usize, Option<ArgValue>), &'static str>
+    pub interprete_tokens: Box<Fn(&Iterator<Item=Token>, usize, Count) -> &Iterator<Item=Token>>
 }
 
 pub struct ArgValue {
@@ -23,10 +23,11 @@ pub struct ArgValue {
     assigned_values: Vec<String>
 }
 
-impl <'a> ArgDefinition <'a> {
-    pub fn new<'r>(count: Count, interprete_tokens: &'r for<'c> Fn(&'c Iterator<Item=Token>, usize, Count) -> Result<(&'c Iterator<Item=Token>, usize, Option<ArgValue>), &'static str>) -> Self {
-        ArgDefinition { count: count, interprete_tokens: interprete_tokens }
+impl ArgDefinition {
+    pub fn new(count: Count, interpreter: Box<Fn(&Iterator<Item=Token>, usize, Count) -> &Iterator<Item=Token>>) -> ArgDefinition {
+        ArgDefinition { count: count, interprete_tokens: interpreter }
     }
+
 }
 
 impl ArgValue {

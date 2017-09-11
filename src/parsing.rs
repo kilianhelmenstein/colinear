@@ -27,7 +27,7 @@ use std::env;
 //}
 
 fn parse_next_argument_with_defintion<'a>(stream: &'a Iterator<Item=Token>, logical_index: usize, arg_definition: ArgDefinition)
-    -> Result<(&'a Iterator<Item=Token>, usize, Option<ArgValue>), &'static str> {
+    -> &'a Iterator<Item=Token> {
     (arg_definition.interprete_tokens)(stream, logical_index, arg_definition.count)
 }
 
@@ -49,11 +49,9 @@ mod test {
         let argument_string = vec![String::from("1"), String::from("2"), String::from("3"), String::from("4"), String::from("5")];
         let token_stream = tokens::tokenize(&argument_string);
 
-        let intepreter =
-            |stream: &Iterator<Item=Token>, logical_index: usize, count: Count|
-            -> Result<(&Iterator<Item=Token>, usize, Option<ArgValue>), &'static str>
-            { return interprete_tokens_increments_logical_index(stream, logical_index, count, 42) };
-        let arg = ArgDefinition::new(Count::Fixed(1), &intepreter);
+        //let intepreter;
+        let arg = ArgDefinition::new(Count::Fixed(1), Box::new(|stream: &Iterator<Item=Token>, logical_index: usize, count: Count|
+        { println!("asdf"); stream }));
 
         super::parse_next_argument_with_defintion(&token_stream.into_iter(), 0, arg);
         panic!("asdf");
