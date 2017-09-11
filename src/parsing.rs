@@ -26,8 +26,8 @@ use std::env;
     //Err("")
 //}
 
-fn parse_next_argument_with_defintion<'a>(stream: &'a Iterator<Item=Token>, logical_index: usize, arg_definition: ArgDefinition)
-    -> &'a Iterator<Item=Token> {
+fn parse_next_argument_with_defintion<'a>(stream: Box<Iterator<Item=Token>>, logical_index: usize, arg_definition: ArgDefinition)
+    -> (Box<Iterator<Item=Token>>, usize, Option<ArgValue>) {
     (arg_definition.interprete_tokens)(stream, logical_index, arg_definition.count)
 }
 
@@ -37,8 +37,8 @@ mod test {
     use tokens::*;
     use args::*;
 
-    fn interprete_tokens_increments_logical_index(stream: &Iterator<Item=Token>, logical_index: usize, count: Count, test: usize)
-        -> Result<(&Iterator<Item=Token>, usize, Option<ArgValue>), &'static str> {
+    fn interprete_tokens_increments_logical_index(stream: Box<Iterator<Item=Token>>, logical_index: usize, count: Count, test: usize)
+        -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
         let arg_value = ArgValue::new(1, vec!(String::new()));
         println!("Wurde aufgerufen mit {}", test);
         Ok((stream, logical_index+1, Some(arg_value)))
@@ -50,10 +50,10 @@ mod test {
         let token_stream = tokens::tokenize(&argument_string);
 
         //let intepreter;
-        let arg = ArgDefinition::new(Count::Fixed(1), Box::new(|stream: &Iterator<Item=Token>, logical_index: usize, count: Count|
-        { println!("asdf"); stream }));
+        let arg = ArgDefinition::new(Count::Fixed(1), Box::new(|stream: Box<Iterator<Item=Token>>, logical_index: usize, count: Count|
+        { println!("asdf"); (stream, logical_index, None) }));
 
-        super::parse_next_argument_with_defintion(&token_stream.into_iter(), 0, arg);
+        super::parse_next_argument_with_defintion(Box::new(token_stream.into_iter()), 0, arg);
         panic!("asdf");
     }
 }
