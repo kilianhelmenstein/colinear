@@ -5,14 +5,13 @@ use tokens::*;
 
 use std::env;
 
-fn parse_entire_stream(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
-
-    match parse_next_argument(stream, 0, args[0..]) {
-        Ok(pending_stream, logical_index, maybe_value) => match maybe_value {
-            Some(value) => ,
-            None => "Could not match",
+pub fn parse_entire_stream(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
+    match parse_next_argument(stream, 0, &args[0..]) {
+        Ok((pending_stream, logical_index, maybe_value)) => match maybe_value {
+            Some(value) => Err("asdf"),
+            None => Err("Could not match"),
         },
-        Err(error_message) =>
+        Err(error_message) => Err(error_message),
     }
 }
 
