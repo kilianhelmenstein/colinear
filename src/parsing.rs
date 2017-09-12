@@ -5,17 +5,16 @@ use tokens::*;
 
 use std::env;
 
-//fn parse_entire_stream(stream: Vec<Token>, args: Vec<Arg>) -> Result<Vec<Arg>, &'static str> {
-    //let (stream_tail, resulting_args) = parse_next_argument(stream, args)?;
+fn parse_entire_stream(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
 
-    //let tokens_pending = stream_tail.len() > 0;
-    //if tokens_pending {
-    //    parse_entire_stream(stream_tail, resulting_args);
-    //} else {
-    //    resulting_args;
-    //}
-    //Err("")
-//}
+    match parse_next_argument(stream, 0, args[0..]) {
+        Ok(pending_stream, logical_index, maybe_value) => match maybe_value {
+            Some(value) => ,
+            None => "Could not match",
+        },
+        Err(error_message) =>
+    }
+}
 
 fn parse_next_argument<'a>(stream: Box<Iterator<Item=Token>>, logical_index: usize, pending_args: &'a [ArgDefinition])
     -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
@@ -35,7 +34,7 @@ fn parse_next_argument<'a>(stream: Box<Iterator<Item=Token>>, logical_index: usi
 
 fn parse_next_argument_with_defintion(stream: Box<Iterator<Item=Token>>, logical_index: usize, arg_definition: &ArgDefinition)
     -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
-    (arg_definition.interprete_tokens)(stream, logical_index, &arg_definition.count)
+    (arg_definition.interprete_tokens)(stream, logical_index, arg_definition.name, &arg_definition.count)
 }
 
 #[cfg(test)]
@@ -44,9 +43,9 @@ mod test {
     use tokens::*;
     use args::*;
 
-    fn interprete_tokens_increments_logical_index(stream: Box<Iterator<Item=Token>>, logical_index: usize, count: &Count, test: usize)
+    fn interprete_tokens_increments_logical_index(stream: Box<Iterator<Item=Token>>, logical_index: usize, name: &'static str, count: &Count, test: usize)
         -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
-        let arg_value = ArgValue::new(1, vec!(String::new()));
+        let arg_value = ArgValue::new("test", 1, vec!(String::new()));
         println!("Wurde aufgerufen mit {}", test);
         Ok((stream, logical_index+1, Some(arg_value)))
     }
@@ -57,8 +56,8 @@ mod test {
         let token_stream = tokens::tokenize(&argument_string);
 
         //let intepreter;
-        let arg = ArgDefinition::new(Count::Fixed(1), Box::new(|stream: Box<Iterator<Item=Token>>, logical_index: usize, count: &Count|
-        { interprete_tokens_increments_logical_index(stream, logical_index, &count, 4) }));
+        let arg = ArgDefinition::new("test", Count::Fixed(1), Box::new(|stream: Box<Iterator<Item=Token>>, logical_index: usize, name: &'static str, count: &Count|
+        { interprete_tokens_increments_logical_index(stream, logical_index, name, &count, 4) }));
 
         let stream_iterator = Box::new(token_stream.into_iter());
         super::parse_next_argument_with_defintion(stream_iterator, 0, &arg);
