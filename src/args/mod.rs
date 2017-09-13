@@ -17,8 +17,8 @@ pub struct ArgDefinition {
 
 pub struct ArgValue {
     pub name: &'static str,
-    occurences: usize,
-    assigned_values: Vec<String>
+    pub occurences: usize,
+    pub assigned_values: Vec<String>
 }
 
 impl ArgDefinition {
@@ -46,5 +46,5 @@ pub fn merged_args(mut arg_values: Vec<ArgValue>, merged_in: ArgValue) -> Vec<Ar
 mod test {
     #[test]
     fn it_works() {
-    }
+    } 
 }
