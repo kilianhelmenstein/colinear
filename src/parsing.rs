@@ -5,11 +5,17 @@ use tokens::*;
 
 use std::env;
 
-pub fn parse_entire_stream(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
+pub fn parse(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
+    parse_entire_stream(stream, args, Vec::new(), 0)
+}
+
+fn parse_entire_stream(stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>, results_yet: Vec<ArgValue>, logical_index: usize)
+    -> Result<Vec<ArgValue>, &'static str> {
+
     match parse_next_argument(stream, 0, &args[0..]) {
-        Ok((pending_stream, logical_index, maybe_value)) => match maybe_value {
-            Some(value) => Err("asdf"),
-            None => Err("Could not match"),
+        Ok((pending_stream, logical_index, maybe_a_result)) => match maybe_a_result {
+            Some(new_arg_result) => parse_entire_stream(pending_stream, args, merged_args(results_yet, new_arg_result), logical_index),
+            None => Ok(results_yet),
         },
         Err(error_message) => Err(error_message),
     }
@@ -61,5 +67,22 @@ mod test {
         let stream_iterator = Box::new(token_stream.into_iter());
         super::parse_next_argument_with_defintion(stream_iterator, 0, &arg);
         panic!("asdf");
+    }
+
+    #[test]
+    fn parse_test() {
+        fn interprete_tokens_by_capturing_one_value(stream: Box<Iterator<Item=Token>>, logical_index: usize, name: &'static str, count: &Count)
+            -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+
+            match stream.next() {
+                Ok(token) => Ok((stream, logical_index+1, ArgValue::new(name, 1, vec![token.clone()]))),
+                None => Ok((stream, logical_index, None)),
+            }
+        }
+
+        let argument_string = vec![String::from("1"), String::from("2"), String::from("3"), String::from("4"), String::from("5")];
+        let token_stream = tokens::tokenize(&argument_string);
+
+        let arg1 = ArgDefinition::new("first", Count::Fixed(1), Box::new(interprete_tokens_increments_logical_index));
     }
 }
