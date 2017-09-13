@@ -39,34 +39,6 @@ pub fn tokenize(arguments: &[String]) -> Vec<Token>
     token_stream
 }
 
-pub fn count_available_contigous_values(token_stream: &[Token]) -> u32 {
-    let mut contigous_value_tokens_count = 0;
-
-    for token in token_stream {
-        if let Token::Value(..) = *token {
-            contigous_value_tokens_count += 1;
-        }
-    }
-    contigous_value_tokens_count
-}
-
-pub fn copy_contigous_values(token_stream: &[Token], max_count: &u32) -> Vec<String> {
-    let mut contigous_values = Vec::new();
-    for token in token_stream {
-        if let Token::Value(ref value) = *token {
-            contigous_values.push(value.clone());
-            if contigous_values.len() >= *max_count as usize {
-                break;
-            }
-        }
-    }
-    contigous_values
-}
-
-pub fn copy_all_contigous_values(token_stream: &[Token]) -> Vec<String> {
-    copy_contigous_values(token_stream, &(token_stream.len() as u32))
-}
-
 #[cfg(test)]
 mod test {
     #[test]
