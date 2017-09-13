@@ -37,6 +37,11 @@ impl ArgValue {
     }
 }
 
+pub fn merged_args(mut arg_values: Vec<ArgValue>, merged_in: ArgValue) -> Vec<ArgValue> {
+    arg_values.push(merged_in);
+    arg_values
+}
+
 #[cfg(test)]
 mod test {
     #[test]
