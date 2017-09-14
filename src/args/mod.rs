@@ -1,14 +1,14 @@
 use tokens::Token;
 
 mod positional_arg_interpreter;
-mod optional_arg_interpreter; 
+mod optional_arg_interpreter;
 
 #[derive(Clone)]
 pub enum Count {
-    Fixed(u32),
-    Minimum(u32),
-    Maximum(u32),
-    Range { min: u32, max: u32 }
+    Fixed(usize),
+    Minimum(usize),
+    Maximum(usize),
+    Range { min: usize, max: usize }
 }
 
 pub struct ArgDefinition {
