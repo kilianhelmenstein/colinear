@@ -3,13 +3,11 @@ use args::Count;
 use tokens;
 use tokens::*;
 
-use std::env;
-
-pub fn parse(mut stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
+pub fn parse(stream: &[Token], args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>, &'static str> {
     parse_entire_stream(stream, args, Vec::new(), 0)
 }
 
-fn parse_entire_stream(mut stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefinition>, results_yet: Vec<ArgValue>, logical_index: usize)
+fn parse_entire_stream(stream: &[Token], args: Vec<ArgDefinition>, results_yet: Vec<ArgValue>, logical_index: usize)
     -> Result<Vec<ArgValue>, &'static str> {
 
     match parse_next_argument(stream, logical_index, &args) {
@@ -21,8 +19,8 @@ fn parse_entire_stream(mut stream: Box<Iterator<Item=Token>>, args: Vec<ArgDefin
     }
 }
 
-fn parse_next_argument<'a>(mut stream: Box<Iterator<Item=Token>>, logical_index: usize, pending_args: &'a [ArgDefinition])
-    -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+fn parse_next_argument<'a, 'b>(stream: &'a [Token], logical_index: usize, pending_args: &'b [ArgDefinition])
+    -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
 
     if pending_args.is_empty() {
         return Ok((stream, logical_index, None));
@@ -37,8 +35,8 @@ fn parse_next_argument<'a>(mut stream: Box<Iterator<Item=Token>>, logical_index:
     }
 }
 
-fn parse_next_argument_with_defintion(mut stream: Box<Iterator<Item=Token>>, logical_index: usize, arg_definition: &ArgDefinition)
-    -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+fn parse_next_argument_with_defintion<'a>(stream: &'a [Token], logical_index: usize, arg_definition: &ArgDefinition)
+    -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
     (arg_definition.interprete_tokens)(stream, logical_index, arg_definition.name, &arg_definition.count)
 }
 
@@ -48,8 +46,8 @@ mod test {
     use tokens::*;
     use args::*;
 
-    fn interprete_tokens_by_capturing_one_value(mut stream: Box<Iterator<Item=Token>>, logical_index: usize, name: &'static str, count: &Count)
-        -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+    fn interprete_tokens_by_capturing_one_value<'a>(stream: &'a [Token], logical_index: usize, name: &'static str, count: &Count)
+        -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
 
         match stream.next() {
             Some(token) => Ok((stream, logical_index+1, Some(ArgValue::new(name, 1, vec![String::from("1")])))),

@@ -1,12 +1,14 @@
 use super::*;
-use super::super::tokens;
 use super::extract_values::*;
 
-pub fn interprete_optional_arg(
-    mut stream: Box<Iterator<Item=Token>>,
+pub fn interprete_optional_arg<'a>(
+    stream: &'a [Token],
     name: &'static str,
-    defined_count: &Count) -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+    defined_count: &Count) -> Result<(&'a [Token], Option<ArgValue>), &'static str> {
 
-
-    Err("")
+    match stream[0] {
+        Token::ShortName(ref short_name) => Err(""),
+        Token::LongName(ref long_name) => Err(""),
+        Token::Value(_) => Ok((stream, None)),
+    }
 }

@@ -15,8 +15,7 @@ pub enum Count {
 pub struct ArgDefinition {
     pub name: &'static str,
     pub count: Count,
-    pub interprete_tokens: Box<Fn(Box<Iterator<Item=Token>>, usize, &'static str, &Count)
-        -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str>>
+    pub interprete_tokens: Box<for<'a> Fn(&'a [Token], usize, &'static str, &Count) -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str>>
 }
 
 pub struct ArgValue {
@@ -29,8 +28,8 @@ impl ArgDefinition {
     pub fn new(
         name: &'static str,
         count: Count,
-        interpreter: Box<Fn(Box<Iterator<Item=Token>>, usize, &'static str, &Count)
-            -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str>>) -> ArgDefinition {
+        interpreter: Box<for<'a> Fn(&'a [Token], usize, &'static str, &Count)
+            -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str>>) -> ArgDefinition {
         ArgDefinition { name: name, count: count, interprete_tokens: interpreter }
     }
 }

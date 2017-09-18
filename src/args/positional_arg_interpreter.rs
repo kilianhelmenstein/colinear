@@ -1,13 +1,12 @@
 use super::*;
-use super::super::tokens;
 use super::extract_values::*;
 
-pub fn interprete_positional_arg(
-    mut stream: Box<Iterator<Item=Token>>,
+pub fn interprete_positional_arg<'a>(
+    stream: &'a [Token],
     actual_logical_index: usize,
     name: &'static str,
     defined_count: &Count,
-    defined_logical_index: usize) -> Result<(Box<Iterator<Item=Token>>, usize, Option<ArgValue>), &'static str> {
+    defined_logical_index: usize) -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
 
     let unfitting_logical_index = actual_logical_index != defined_logical_index;
     if unfitting_logical_index {
