@@ -31,7 +31,7 @@ mod test {
     use super::super::*;
 
     #[test]
-    fn interprete_positional_arg__test() {
+    fn interprete_positional_arg__two_values__captures_two_values() {
         let argument_string = vec![String::from("1"), String::from("2"), String::from("3"), String::from("4")];
         let token_stream = tokens::tokenize(&argument_string);
 
