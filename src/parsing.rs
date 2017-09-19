@@ -49,9 +49,14 @@ mod test {
     fn interprete_tokens_by_capturing_one_value<'a>(stream: &'a [Token], logical_index: usize, name: &'static str, count: &Count)
         -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
 
-        match stream.next() {
-            Some(token) => Ok((stream, logical_index+1, Some(ArgValue::new(name, 1, vec![String::from("1")])))),
-            None => Ok((stream, logical_index, None)),
+        if stream.len() == 0 {
+            return Ok((stream, logical_index, None));
+        }
+
+        if let Token::Value(ref val) = stream[0] {
+            Ok((&stream[1..], logical_index+1, Some(ArgValue::new(name, 1, vec![val.clone()]))))
+        } else {
+            Ok((&stream[1..], logical_index+1, None))
         }
     }
 
@@ -62,8 +67,7 @@ mod test {
 
         let arg_def = ArgDefinition::new("first", Count::Fixed(1), Box::new(interprete_tokens_by_capturing_one_value));
 
-        let stream_iterator = Box::new(token_stream.into_iter());
-        let (pending_stream, logical_index, maybe_value) = super::parse_next_argument_with_defintion(stream_iterator, 0, &arg_def).unwrap();
+        let (pending_stream, logical_index, maybe_value) = super::parse_next_argument_with_defintion(&token_stream, 0, &arg_def).unwrap();
 
         let value = match maybe_value {
             Some(value) => value,
@@ -82,8 +86,7 @@ mod test {
 
         let arg_defs = vec![ArgDefinition::new("first", Count::Fixed(1), Box::new(interprete_tokens_by_capturing_one_value))];
 
-        let stream_iterator = Box::new(token_stream.into_iter());
-        let (pending_stream, logical_index, maybe_value) = super::parse_next_argument(stream_iterator, 0, &arg_defs).unwrap();
+        let (pending_stream, logical_index, maybe_value) = super::parse_next_argument(&token_stream, 0, &arg_defs).unwrap();
 
         let value = match maybe_value {
             Some(value) => value,
@@ -102,8 +105,7 @@ mod test {
 
         let arg_defs = vec![ArgDefinition::new("first", Count::Fixed(1), Box::new(interprete_tokens_by_capturing_one_value))];
 
-        let stream_iterator = Box::new(token_stream.into_iter());
-        let values = super::parse_entire_stream(stream_iterator, arg_defs, Vec::new(), 0).unwrap();
+        let values = super::parse_entire_stream(&token_stream, arg_defs, Vec::new(), 0).unwrap();
 
         assert!(values.len() == 4);
         assert!(values[0].name == String::from("first"));
@@ -119,8 +121,7 @@ mod test {
         let arg1 = ArgDefinition::new("first", Count::Fixed(1), Box::new(interprete_tokens_by_capturing_one_value));
         let arg_defs = vec![arg1];
 
-        let mut stream_iterator = Box::new(token_stream.into_iter());
-        let result = super::parse(stream_iterator, arg_defs).unwrap();
+        let result = super::parse(&token_stream, arg_defs).unwrap();
 
         print!("{}", result.len());
         assert!(result.len() == 4);
