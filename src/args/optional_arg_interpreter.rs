@@ -8,11 +8,15 @@ pub fn interprete_optional_arg<'a>(
     defined_long_name: &String,
     stream: &'a [Token]) -> Result<(&'a [Token], Option<ArgValue>), &'static str> {
 
-    match stream[0] {
-        Token::ShortName(ref short_name) => Err(""),
-        Token::LongName(ref long_name) => Err(""),
-        Token::Value(_) => Ok((stream, None)),
-    }
+    let names_matches = match stream[0] {
+        Token::ShortName(ref short_name) => short_name == defined_short_name,
+        Token::LongName(ref long_name) => long_name == defined_long_name,
+        Token::Value(_) => false,
+    };
+
+    if !names_matches {
+        return Ok((stream, None));
+    };
 
     let (min, max) = match defined_count {
         &Count::Fixed(fixed_count) => (fixed_count, fixed_count),
@@ -21,8 +25,8 @@ pub fn interprete_optional_arg<'a>(
         &Count::Range { min, max } => (min, max),
     };
 
-    let (stream, values) = n_following_values(stream[1..], min, max)?;
-    Ok((stream, actual_logical_index+1, Some(ArgValue::new(name, 1, values))))
+    let (stream, values) = n_following_values(&stream[1..], min, max)?;
+    Ok((stream, Some(ArgValue::new(name, 1, values))))
 }
 
 #[cfg(test)]
