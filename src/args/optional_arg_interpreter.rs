@@ -36,8 +36,20 @@ mod test {
     use super::super::*;
 
     #[test]
-    fn interprete_optional_arg__two_values__captures_two_values() {
-        let token_stream = tokens::tokenize(&vec![String::from("1"), String::from("2"), String::from("3"), String::from("4")]);
+    fn interprete_optional_arg__shortname_and_two_values__captures_two_values() {
+        let token_stream = tokens::tokenize(&vec![String::from("-o"), String::from("1"), String::from("2"), String::from("3")]);
+
+        let (stream, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream).unwrap();
+        let arg_value = maybe_value.unwrap();
+
+        assert!(arg_value.occurences == 1);
+        assert!(arg_value.name == String::from("opional_arg"));
+        assert!(arg_value.assigned_values == vec![String::from("1"), String::from("2")]);
+    }
+
+    #[test]
+    fn interprete_optional_arg__longname_and_two_values__captures_two_values() {
+        let token_stream = tokens::tokenize(&vec![String::from("--optional"), String::from("1"), String::from("2"), String::from("3")]);
 
         let (stream, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream).unwrap();
         let arg_value = maybe_value.unwrap();
