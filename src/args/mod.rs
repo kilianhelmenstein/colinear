@@ -2,7 +2,7 @@ use tokens::Token;
 
 mod positional_arg_interpreter;
 mod optional_arg_interpreter;
-pub mod extract_values;
+mod extract_values;
 
 #[derive(Clone)]
 pub enum Count {
