@@ -45,6 +45,12 @@ pub fn merged_args(mut arg_values: Vec<ArgValue>, merged_in: ArgValue) -> Vec<Ar
     arg_values
 }
 
+pub struct ArgDefinitionBuilder {
+    pub name: Option<&'static str>,
+    pub count: Option<Count>,
+    pub interprete_tokens: Option<Box<for<'a> Fn(&'a [Token], usize, &'static str, &Count) -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str>>>
+}
+
 #[cfg(test)]
 mod test {
     #[test]
