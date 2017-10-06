@@ -1,5 +1,6 @@
 use tokens::Token;
 
+pub mod builder;
 mod positional_arg_interpreter;
 mod optional_arg_interpreter;
 mod extract_values;
