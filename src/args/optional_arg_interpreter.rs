@@ -6,7 +6,8 @@ pub fn interprete_optional_arg<'a>(
     defined_count: &Count,
     defined_short_name: &String,
     defined_long_name: &String,
-    stream: &'a [Token]) -> Result<(&'a [Token], Option<ArgValue>), &'static str> {
+    stream: &'a [Token],
+    actual_logical_index: usize) -> Result<(&'a [Token], usize, Option<ArgValue>), &'static str> {
 
     let names_matches = match stream[0] {
         Token::ShortName(ref short_name) => short_name == defined_short_name,
@@ -15,7 +16,7 @@ pub fn interprete_optional_arg<'a>(
     };
 
     if !names_matches {
-        return Ok((stream, None));
+        return Ok((stream, actual_logical_index, None));
     };
 
     let (min, max) = match defined_count {
@@ -26,7 +27,7 @@ pub fn interprete_optional_arg<'a>(
     };
 
     let (stream, values) = n_following_values(&stream[1..], min, max)?;
-    Ok((stream, Some(ArgValue::new(name, 1, values))))
+    Ok((stream, actual_logical_index, Some(ArgValue::new(name, 1, values))))
 }
 
 #[cfg(test)]
@@ -39,9 +40,10 @@ mod test {
     fn interprete_optional_arg__shortname_and_two_values__captures_two_values() {
         let token_stream = tokens::tokenize(&vec![String::from("-o"), String::from("1"), String::from("2"), String::from("3")]);
 
-        let (stream, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream).unwrap();
+        let (stream, index, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream, 0).unwrap();
         let arg_value = maybe_value.unwrap();
 
+        assert!(index == 0);
         assert!(arg_value.occurences == 1);
         assert!(arg_value.name == String::from("opional_arg"));
         assert!(arg_value.assigned_values == vec![String::from("1"), String::from("2")]);
@@ -51,9 +53,10 @@ mod test {
     fn interprete_optional_arg__longname_and_two_values__captures_two_values() {
         let token_stream = tokens::tokenize(&vec![String::from("--optional"), String::from("1"), String::from("2"), String::from("3")]);
 
-        let (stream, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream).unwrap();
+        let (stream, index, maybe_value) = super::interprete_optional_arg("opional_arg", &Count::Fixed(2), &String::from("-o"), &String::from("--optional"), &token_stream, 0).unwrap();
         let arg_value = maybe_value.unwrap();
 
+        assert!(index == 0);
         assert!(arg_value.occurences == 1);
         assert!(arg_value.name == String::from("opional_arg"));
         assert!(arg_value.assigned_values == vec![String::from("1"), String::from("2")]);
