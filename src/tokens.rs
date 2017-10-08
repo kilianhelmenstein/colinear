@@ -39,6 +39,20 @@ pub fn tokenize(arguments: &[String]) -> Vec<Token>
     token_stream
 }
 
+use std::fmt;
+
+impl fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let debug_message = match *self {
+            Token::ShortName(ref short_name) => format!("ShortName: {}", short_name),
+            Token::LongName(ref long_name) => format!("LongName: {}", long_name),
+            Token::Value(ref value) => format!("Value: {}", value),
+        };
+        write!(f, "Token {{ {} }}", debug_message)
+    }
+
+}
+
 #[cfg(test)]
 mod test {
     #[test]
