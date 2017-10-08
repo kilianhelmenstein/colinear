@@ -27,6 +27,7 @@ pub fn interprete_optional_arg<'a>(
     };
 
     let (stream, values) = n_following_values(&stream[1..], min, max)?;
+
     Ok((stream, actual_logical_index, Some(ArgValue::new(name, 1, values))))
 }
 
