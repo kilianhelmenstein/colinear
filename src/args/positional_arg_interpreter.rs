@@ -27,7 +27,6 @@ pub fn interprete_positional_arg<'a>(
 #[cfg(test)]
 mod test {
     use super::super::super::tokens;
-    use super::super::super::tokens::*;
     use super::super::*;
 
     #[test]
