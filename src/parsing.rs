@@ -8,12 +8,16 @@ pub fn parse(stream: &[Token], args: Vec<ArgDefinition>) -> Result<Vec<ArgValue>
 fn parse_entire_stream(stream: &[Token], args: Vec<ArgDefinition>, results_yet: Vec<ArgValue>, logical_index: usize)
     -> Result<Vec<ArgValue>, &'static str> {
 
-    match parse_next_argument(stream, logical_index, &args) {
-        Ok((pending_stream, logical_index, maybe_a_result)) => match maybe_a_result {
-            Some(new_arg_result) => parse_entire_stream(pending_stream, args, merged_args(results_yet, new_arg_result), logical_index),
-            None => Ok(results_yet),
-        },
-        Err(error_message) => Err(error_message),
+    if stream.is_empty() {
+        Ok(results_yet)
+    } else {
+        match parse_next_argument(stream, logical_index, &args) {
+            Ok((pending_stream, logical_index, maybe_a_result)) => match maybe_a_result {
+                Some(new_arg_result) => parse_entire_stream(pending_stream, args, merged_args(results_yet, new_arg_result), logical_index),
+                None => Ok(results_yet),
+            },
+            Err(error_message) => Err(error_message),
+        }
     }
 }
 
