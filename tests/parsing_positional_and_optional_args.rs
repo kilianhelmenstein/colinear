@@ -23,6 +23,5 @@ fn parsing_one_() {
     let parsed_args = parse(&token_stream, args).unwrap();
 
     print!("Result's length: {}\n", parsed_args.len());
-    assert!(parsed_args.len() == 1);
-
+    assert!(parsed_args.len() == 4);
 }
