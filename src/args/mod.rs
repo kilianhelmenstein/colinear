@@ -41,8 +41,19 @@ impl ArgValue {
     }
 }
 
-pub fn merged_args(mut arg_values: Vec<ArgValue>, merged_in: ArgValue) -> Vec<ArgValue> {
-    arg_values.push(merged_in);
+pub fn merged_args(mut arg_values: Vec<ArgValue>, mut merged_in: ArgValue) -> Vec<ArgValue> {
+    let already_occured = if let Some(ref mut found_arg) = arg_values.iter_mut().find(|ref arg| arg.name == merged_in.name) {
+        found_arg.occurences += 1;
+        found_arg.assigned_values.append(&mut merged_in.assigned_values);
+        true
+    } else {
+        false
+    };
+
+    if !already_occured {
+        arg_values.push(merged_in);
+    }
+
     arg_values
 }
 
