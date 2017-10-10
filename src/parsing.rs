@@ -109,10 +109,10 @@ mod test {
 
         let values = super::parse_entire_stream(&token_stream, arg_defs, Vec::new(), 0).unwrap();
 
-        assert!(values.len() == 4);
+        assert!(values.len() == 1);
         assert!(values[0].name == String::from("first"));
-        assert!(values[0].occurences == 1);
-        assert!(values[0].assigned_values == vec![String::from("1")]);
+        assert!(values[0].occurences == 4);
+        assert!(values[0].assigned_values == vec![String::from("1"), String::from("2"), String::from("3"), String::from("4")]);
     }
 
     #[test]
@@ -126,6 +126,6 @@ mod test {
         let result = super::parse(&token_stream, arg_defs).unwrap();
 
         print!("{}", result.len());
-        assert!(result.len() == 4);
+        assert!(result.len() == 1);
     }
 }
